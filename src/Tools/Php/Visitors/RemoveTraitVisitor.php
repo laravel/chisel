@@ -3,6 +3,7 @@
 namespace Laravel\Chisel\Tools\Php\Visitors;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\TraitUse;
 use PhpParser\NodeVisitorAbstract;
@@ -34,7 +35,7 @@ class RemoveTraitVisitor extends NodeVisitorAbstract
                 continue;
             }
 
-            $remaining = array_filter($stmt->traits, fn (\PhpParser\Node\Name $trait): bool => ! in_array($this->simpleName($trait->toString()), $this->traits));
+            $remaining = array_filter($stmt->traits, fn (Name $trait): bool => ! in_array($this->simpleName($trait->toString()), $this->traits));
 
             if ($remaining === []) {
                 unset($class->stmts[$index]);
