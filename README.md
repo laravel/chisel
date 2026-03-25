@@ -1,8 +1,6 @@
 # Laravel Chisel
 
-Laravel Chisel runs post-install customization scripts for Laravel starter kits.
-
-A starter kit can ship with optional features already present, prompt for the user's choices during installation, and remove anything they did not select.
+Laravel Chisel is a toolkit for building scripts remove unwanted code, files, and dependencies. It's used by the official Fortify starter kits to allow users to customize which authentication features they want in their application.
 
 ## Install
 

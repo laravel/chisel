@@ -1,6 +1,6 @@
 {
     "name": "laravel/chisel",
-    "description": "Toolkit for building post-install customization scripts in Laravel starter kits.",
+    "description": "Toolkit for building scripts that remove unwanted code, files, and dependencies.",
     "keywords": [
         "laravel",
         "chisel"
