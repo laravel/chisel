@@ -93,6 +93,7 @@ $c->selected('auth_features', 'email-verification',
 | `withAnswers(?string $json)` | Hydrate answers from JSON |
 | `multiselect($name, $label, $options, $default = [], $hint = '', $required = false)` | Ask for feature selections |
 | `selected($key, $value, then:, else:)` | Branch on a multiselect answer |
+| `selectedAny($key, $values, then:, else:)` | Branch when any of several multiselect answers are selected |
 
 ### File Mutations
 

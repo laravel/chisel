@@ -43,6 +43,26 @@ it('branches on selected multiselect answers', function (): void {
     expect($branches)->toBe([Chisel::class, Chisel::class]);
 });
 
+it('branches when any multiselect answer is selected', function (): void {
+    $branches = [];
+
+    Chisel::in($this->tempDir)
+        ->withAnswers(json_encode(['auth_features' => ['passkeys']]))
+        ->multiselect('auth_features', 'Which authentication features would you like to enable?', [
+            'email-verification' => 'Email verification',
+            '2fa' => 'Two-factor authentication',
+            'passkeys' => 'Passkeys',
+        ], hint: 'Use space to select, enter to confirm.')
+        ->selectedAny('auth_features', ['2fa', 'passkeys'], then: function (Chisel $chisel) use (&$branches): void {
+            $branches[] = $chisel::class;
+        })
+        ->selectedAny('auth_features', ['email-verification', '2fa'], else: function (Chisel $chisel) use (&$branches): void {
+            $branches[] = $chisel::class;
+        });
+
+    expect($branches)->toBe([Chisel::class, Chisel::class]);
+});
+
 it('applies subtractive file mutations', function (): void {
     mkdir($this->tempDir.'/config', 0777, true);
     mkdir($this->tempDir.'/resources/js/pages/auth', 0777, true);

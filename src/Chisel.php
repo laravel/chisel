@@ -49,6 +49,27 @@ class Chisel
         return $this;
     }
 
+    public function selectedAny(string $key, array $values, ?callable $then = null, ?callable $else = null): static
+    {
+        $selected = (array) $this->answer($key, []);
+
+        foreach ($values as $value) {
+            if (in_array($value, $selected, true)) {
+                if ($then) {
+                    $then($this);
+                }
+
+                return $this;
+            }
+        }
+
+        if ($else) {
+            $else($this);
+        }
+
+        return $this;
+    }
+
     public function files(string ...$paths): PendingFiles
     {
         return new PendingFiles(new File($this->directory), $paths);
