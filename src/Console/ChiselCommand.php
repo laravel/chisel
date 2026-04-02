@@ -4,6 +4,7 @@ namespace Laravel\Chisel\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Process\Factory;
+use Laravel\Chisel\NodePackageManager;
 use Symfony\Component\Process\Process as SymfonyProcess;
 
 use function Laravel\Prompts\confirm;
@@ -75,17 +76,19 @@ class ChiselCommand extends Command
 
     protected function rebuildAssets(string $directory): void
     {
-        info('Installing npm dependencies...');
+        $packageManager = NodePackageManager::detect($directory);
+
+        info('Installing dependencies with '.$packageManager->value.'...');
 
         $install = (new Factory)
             ->path($directory)
             ->forever()
-            ->run(['npm', 'install'], function (string $type, string $line): void {
+            ->run($packageManager->installProcessCommand(), function (string $type, string $line): void {
                 $this->output->write('    '.$line);
             });
 
         if (! $install->successful()) {
-            warning('npm install failed. You may need to run "npm install" and "npm run build" manually.');
+            warning($packageManager->installCommand().' failed. You may need to run "'.$packageManager->installCommand().'" and "'.$packageManager->buildCommand().'" manually.');
 
             return;
         }
@@ -95,14 +98,14 @@ class ChiselCommand extends Command
         $build = (new Factory)
             ->path($directory)
             ->forever()
-            ->run(['npm', 'run', 'build'], function (string $type, string $line): void {
+            ->run($packageManager->buildProcessCommand(), function (string $type, string $line): void {
                 $this->output->write('    '.$line);
             });
 
         if ($build->successful()) {
             info('Assets built successfully.');
         } else {
-            warning('Asset build failed. You may need to run "npm run build" manually.');
+            warning('Asset build failed. You may need to run "'.$packageManager->buildCommand().'" manually.');
         }
     }
 

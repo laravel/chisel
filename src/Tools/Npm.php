@@ -3,6 +3,7 @@
 namespace Laravel\Chisel\Tools;
 
 use Illuminate\Process\Factory;
+use Laravel\Chisel\NodePackageManager;
 
 class Npm
 {
@@ -10,10 +11,12 @@ class Npm
 
     public function remove(string ...$packages): void
     {
+        $packageManager = NodePackageManager::detect($this->directory);
+
         (new Factory)
             ->path($this->directory)
             ->forever()
-            ->run(['npm', 'remove', ...$packages])
+            ->run($packageManager->removeProcessCommand(...$packages))
             ->throw();
     }
 }

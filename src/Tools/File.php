@@ -19,11 +19,19 @@ class File
 
     public function replace(string $file, string $search, string $replace): void
     {
+        if (! $this->exists($file)) {
+            return;
+        }
+
         $this->write($file, str_replace($search, $replace, $this->read($file)));
     }
 
     public function removeLinesContaining(string $file, string $content): void
     {
+        if (! $this->exists($file)) {
+            return;
+        }
+
         $lines = explode("\n", $this->read($file));
         $lines = array_values(array_filter($lines, fn (string $line): bool => ! str_contains($line, $content)));
 
@@ -63,6 +71,10 @@ class File
 
     protected function rewriteSection(string $file, string $tag, bool $keepContents): void
     {
+        if (! $this->exists($file)) {
+            return;
+        }
+
         $lines = explode("\n", $this->read($file));
         ['start' => $startPatterns, 'end' => $endPatterns] = $this->blockPatterns($tag);
 
@@ -112,5 +124,10 @@ class File
     protected function write(string $file, string $contents): void
     {
         file_put_contents($this->directory.'/'.$file, $contents);
+    }
+
+    protected function exists(string $file): bool
+    {
+        return file_exists($this->directory.'/'.$file);
     }
 }

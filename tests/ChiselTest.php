@@ -111,6 +111,38 @@ it('applies subtractive file mutations', function (): void {
         ->and($this->tempDir.'/tests/Feature/Auth/TwoFactorTest.php')->not->toBeFile();
 });
 
+it('ignores missing files during subtractive mutations', function (): void {
+    mkdir($this->tempDir.'/resources/js/pages/auth', 0777, true);
+    mkdir($this->tempDir.'/routes', 0777, true);
+
+    file_put_contents($this->tempDir.'/resources/js/pages/auth/login.tsx', "{/* @passkeys */}\n<button>Passkey</button>\n{/* @end-passkeys */}\n");
+    file_put_contents($this->tempDir.'/routes/settings.php', "before\n/* @2fa */\nremove me\n/* @end-2fa */\nafter\n");
+
+    $chisel = Chisel::in($this->tempDir);
+
+    $chisel->files(
+        'resources/js/pages/auth/login.tsx',
+        'resources/js/pages/auth/confirm-password.tsx',
+    )->removeSectionMarkers('passkeys');
+
+    $chisel->files(
+        'routes/settings.php',
+        'routes/profile.php',
+    )->removeSection('2fa');
+
+    $chisel->files(
+        'tests/Feature/Auth/PasskeyTest.php',
+        'tests/Feature/Auth/TwoFactorTest.php',
+    )->delete();
+
+    expect(file_get_contents($this->tempDir.'/resources/js/pages/auth/login.tsx'))->toBe("<button>Passkey</button>\n")
+        ->and(file_get_contents($this->tempDir.'/routes/settings.php'))->toBe("before\nafter\n")
+        ->and($this->tempDir.'/resources/js/pages/auth/confirm-password.tsx')->not->toBeFile()
+        ->and($this->tempDir.'/routes/profile.php')->not->toBeFile()
+        ->and($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php')->not->toBeFile()
+        ->and($this->tempDir.'/tests/Feature/Auth/TwoFactorTest.php')->not->toBeFile();
+});
+
 it('runs npm remove in the project directory', function (): void {
     $bin = $this->tempDir.'/bin';
     $log = $this->tempDir.'/npm.log';

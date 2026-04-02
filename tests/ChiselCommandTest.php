@@ -10,8 +10,8 @@ use Symfony\Component\Console\Tester\CommandTester;
 final class TestLaravelApp extends Container
 {
     public function __construct(
-        private string $basePath,
-        private bool $runningInConsole = true,
+        private readonly string $basePath,
+        private readonly bool $runningInConsole = true,
     ) {}
 
     public function basePath(string $path = ''): string
@@ -63,6 +63,44 @@ printf '%s\n' "\$*" >> {$npmLog}
 echo "npm:\$*"
 SH);
     chmod($path.'/bin/npm', 0755);
+}
+
+function createPackageManagerCommandProject(string $path, string $packageManager): void
+{
+    $log = var_export($path.'/'.$packageManager.'.log', true);
+    $composerScripts = match ($packageManager) {
+        'yarn' => ['dev' => 'yarn run dev'],
+        'pnpm' => ['dev' => 'pnpm dev'],
+        'bun' => ['dev' => 'bun run dev'],
+    };
+
+    mkdir($path.'/vendor', 0777, true);
+    mkdir($path.'/bin', 0777, true);
+
+    file_put_contents($path.'/vendor/autoload.php', "<?php\n\nrequire ".var_export(realpath(__DIR__.'/../vendor/autoload.php'), true).";\n");
+    file_put_contents($path.'/flag.txt', 'before');
+    file_put_contents($path.'/composer.json', json_encode(['scripts' => $composerScripts], JSON_THROW_ON_ERROR));
+    file_put_contents($path.'/example-chisel.php', <<<'PHP'
+<?php
+
+require getenv('LARAVEL_INSTALLER_AUTOLOADER');
+
+use Laravel\Chisel\Chisel;
+
+echo "script:running\n";
+
+Chisel::in(__DIR__)
+    ->withAnswers($argv[1] ?? null)
+    ->file('flag.txt')
+    ->replace('before', 'after');
+PHP);
+
+    file_put_contents($path.'/bin/'.$packageManager, <<<SH
+#!/bin/sh
+printf '%s\n' "\$*" >> {$log}
+echo "{$packageManager}:\$*"
+SH);
+    chmod($path.'/bin/'.$packageManager, 0755);
 }
 
 function createCommandTester(string $path): CommandTester
@@ -168,4 +206,29 @@ it('keeps the script when npm install fails', function (): void {
         ->and($this->tempDir.'/example-chisel.php')->toBeFile()
         ->and($tester->getDisplay())->toContain('npm install failed')
         ->and($tester->getDisplay())->toContain('Kept chisel script at example-chisel.php');
+});
+
+it('rebuilds assets with the detected package manager from composer scripts', function (): void {
+    createPackageManagerCommandProject($this->tempDir, 'bun');
+
+    $originalPath = getenv('PATH') ?: '';
+    putenv('PATH='.$this->tempDir.'/bin:'.$originalPath);
+
+    try {
+        $tester = createCommandTester($this->tempDir);
+
+        $exitCode = $tester->execute([
+            '--path' => 'example-chisel.php',
+            '--answers' => '{}',
+        ]);
+    } finally {
+        putenv('PATH='.$originalPath);
+    }
+
+    expect($exitCode)->toBe(ConsoleChiselCommand::SUCCESS)
+        ->and(file_get_contents($this->tempDir.'/flag.txt'))->toBe('after')
+        ->and(file_get_contents($this->tempDir.'/bun.log'))->toContain('install')
+        ->and(file_get_contents($this->tempDir.'/bun.log'))->toContain('run build')
+        ->and($tester->getDisplay())->toContain('Installing dependencies with bun...')
+        ->and($tester->getDisplay())->toContain('Assets built successfully.');
 });

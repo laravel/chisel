@@ -34,7 +34,7 @@ Use `--delete-script` to delete the script after a successful run:
 php artisan chisel --delete-script
 ```
 
-The command runs the chisel script, then runs `npm install` and `npm run build`.
+The command runs the chisel script, then detects the project's package manager and runs the matching install and build commands.
 
 ## Example
 
@@ -121,7 +121,9 @@ $c->selected('auth_features', 'email-verification',
 
 | Method | Purpose |
 |---|---|
-| `npm()->remove(...$packages)` | Remove npm packages |
+| `npm()->remove(...$packages)` | Remove frontend packages with the detected package manager |
+
+`npm()` keeps the fluent API name, but it detects `npm`, `yarn`, `pnpm`, and `bun` the same way Laravel Installer does.
 
 ## Section Markers
 
