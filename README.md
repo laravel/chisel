@@ -1,42 +1,25 @@
-# Laravel Chisel
+<p align="center">
+<a href="https://github.com/laravel/chisel/actions"><img src="https://github.com/laravel/chisel/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/chisel"><img src="https://img.shields.io/packagist/dt/laravel/chisel" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/chisel"><img src="https://img.shields.io/packagist/v/laravel/chisel" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/chisel"><img src="https://img.shields.io/packagist/l/laravel/chisel" alt="License"></a>
+</p>
 
-Laravel Chisel is a toolkit for building scripts remove unwanted code, files, and dependencies. It's used by the official Fortify starter kits to allow users to customize which authentication features they want in their application.
+## Introduction
 
-## Install
+Laravel Chisel provides primitives for building post-install scripts that remove unwanted features from Laravel starter kits.
 
-```bash
-composer require --dev laravel/chisel:dev-main
-```
+A starter kit includes a `chisel.php` script that declares the available features and what to do when each one is selected or deselected. The installer collects the user's choices and passes them to Chisel for execution.
 
-## Running A Chisel Script
-
-Create a `chisel.php` file in the project root, then run:
-
-```bash
-php artisan chisel
-```
-
-Use `--path` to run a different script:
+## Installation
 
 ```bash
-php artisan chisel --path=example-chisel.php
+composer require laravel/chisel
 ```
 
-Use `--answers` to pass preselected answers as JSON:
+## Usage
 
-```bash
-php artisan chisel --path=example-chisel.php --answers='{"auth_features":["email-verification"]}'
-```
-
-Use `--delete-script` to delete the script after a successful run:
-
-```bash
-php artisan chisel --delete-script
-```
-
-The command runs the chisel script, then detects the project's package manager and runs the matching install and build commands.
-
-## Example
+A typical chisel script defines questions and branches on the answers:
 
 ```php
 <?php
@@ -44,90 +27,114 @@ The command runs the chisel script, then detects the project's package manager a
 require getenv('LARAVEL_INSTALLER_AUTOLOADER');
 
 use Laravel\Chisel\Chisel;
+use Laravel\Chisel\Question;
 
-$c = Chisel::in(dirname(__DIR__))
-    ->withAnswers($argv[1] ?? null)
-    ->multiselect('auth_features', 'Which authentication features would you like to enable?', [
-        'email-verification' => 'Email verification',
-        '2fa' => 'Two-factor authentication',
-        'passkeys' => 'Passkeys',
-    ], hint: 'Use space to select, enter to confirm.');
+return Chisel::script(dirname(__DIR__))
+    ->questions([
+        Question::multiselect(
+            name: 'auth_features',
+            label: 'Which authentication features would you like to enable?',
+            options: [
+                'email-verification' => 'Email verification',
+                '2fa' => 'Two-factor authentication',
+                'passkeys' => 'Passkeys',
+            ],
+            hint: 'Use space to select, enter to confirm.',
+        ),
+    ])
+    ->selected('auth_features', 'email-verification',
+        then: function (Chisel $c) {
+            $c->files(
+                'resources/js/pages/settings/profile.tsx',
+                'app/Providers/FortifyServiceProvider.php',
+            )->removeSectionMarkers('email-verification');
+        },
+        else: function (Chisel $c) {
+            $c->phpFile('app/Models/User.php')
+                ->removeImport('Illuminate\Contracts\Auth\MustVerifyEmail')
+                ->removeInterface('MustVerifyEmail');
 
-$c->selected('auth_features', 'email-verification',
-    then: function (Chisel $c) {
-        $c->files(
-            'resources/js/pages/settings/profile.tsx',
-            'app/Providers/FortifyServiceProvider.php',
-        )->removeSectionMarkers('email-verification');
-    },
-    else: function (Chisel $c) {
-        $c->phpFile('app/Models/User.php')
-            ->removeImport('Illuminate\Contracts\Auth\MustVerifyEmail')
-            ->removeInterface('MustVerifyEmail');
+            $c->file('config/fortify.php')->removeLinesContaining('Features::emailVerification()');
 
-        $c->file('config/fortify.php')->removeLinesContaining('Features::emailVerification()');
+            $c->files(
+                'app/Providers/FortifyServiceProvider.php',
+                'resources/js/pages/settings/profile.tsx',
+            )->removeSection('email-verification');
 
-        $c->files(
-            'app/Providers/FortifyServiceProvider.php',
-            'resources/js/pages/settings/profile.tsx',
-        )->removeSection('email-verification');
-
-        $c->files(
-            'resources/js/components/email-verification-notice.tsx',
-            'resources/js/pages/auth/verify-email.tsx',
-            'tests/Feature/Auth/EmailVerificationTest.php',
-            'tests/Feature/Auth/VerificationNotificationTest.php',
-        )->delete();
-    },
-);
+            $c->files(
+                'resources/js/components/email-verification-notice.tsx',
+                'resources/js/pages/auth/verify-email.tsx',
+                'tests/Feature/Auth/EmailVerificationTest.php',
+                'tests/Feature/Auth/VerificationNotificationTest.php',
+            )->delete();
+        },
+    );
 ```
 
-`withAnswers()` accepts a JSON string. Pass `null` to prompt interactively, or pass a JSON payload in `$argv[1]` to skip prompts.
+An Artisan command in the starter kit can use `questions()` to render [Laravel Prompts](https://laravel.com/docs/prompts) and then execute the script:
 
-## API
+```php
+$script = require base_path('chisel.php');
 
-### Prompts And Branching
+$answers = [
+    'auth_features' => multiselect(
+        label: $script->questions()[0]->label,
+        options: $script->questions()[0]->options,
+        default: $script->questions()[0]->default ?? [],
+        required: $script->questions()[0]->required,
+        hint: $script->questions()[0]->hint,
+    ),
+];
+
+$script->run($answers);
+```
+
+## Script Definitions
 
 | Method | Purpose |
 |---|---|
-| `withAnswers(?string $json)` | Hydrate answers from JSON |
-| `multiselect($name, $label, $options, $default = [], $hint = '', $required = false)` | Ask for feature selections |
+| `Chisel::script($directory)` | Create a script definition |
+| `Question::multiselect(...)` | Define a multiselect question |
+| `questions([...])` | Set the script's questions |
+| `questions()` | Retrieve the registered questions |
+| `apply($callback)` | Register an unconditional mutation step |
 | `selected($key, $value, then:, else:)` | Branch on a multiselect answer |
-| `selectedAny($key, $values, then:, else:)` | Branch when any of several multiselect answers are selected |
+| `selectedAny($key, $values, then:, else:)` | Branch when any of the given values are selected |
+| `run($answers)` | Execute the registered mutations |
 
-### File Mutations
+## File Mutations
 
-`file($path)` targets one file. `files(...$paths)` targets many files.
+`file($path)` targets a single file. `files(...$paths)` targets multiple files.
 
 | Method | Purpose |
 |---|---|
 | `replace($search, $replace)` | Replace a string |
 | `removeLinesContaining($content)` | Remove lines containing a string |
-| `removeSectionMarkers($tag)` | Remove section markers and keep the content |
-| `removeSection($tag)` | Remove the section markers and the content inside them |
+| `removeSectionMarkers($tag)` | Strip section markers, keep the content |
+| `removeSection($tag)` | Remove section markers and the content inside them |
 | `delete()` | Delete the targeted files |
 
-### PHP File Mutations
+## PHP File Mutations
 
-`phpFile($path)` applies AST-based edits and saves automatically when the object is destroyed.
+`phpFile($path)` provides AST-based edits. Changes are saved automatically when the object is destroyed.
 
 | Method | Purpose |
 |---|---|
 | `removeImport($class)` | Remove a `use` statement |
-| `removeTrait($trait)` | Remove a trait from the class |
+| `removeTrait($trait)` | Remove a trait usage from the class |
 | `removeInterface($interface)` | Remove an implemented interface |
 
-### npm
+## npm
 
 | Method | Purpose |
 |---|---|
-| `npm()->remove(...$packages)` | Remove frontend packages with the detected package manager |
+| `npm()->remove(...$packages)` | Remove packages using the detected package manager |
 
-`npm()` keeps the fluent API name, but it detects `npm`, `yarn`, `pnpm`, and `bun` the same way Laravel Installer does.
+The `npm()` method detects `npm`, `yarn`, `pnpm`, and `bun` automatically.
 
 ## Section Markers
 
-Use comment pairs to wrap optional code:
+Wrap optional code in comment pairs:
 
 ```php
 /* @passkeys */
@@ -135,7 +142,7 @@ Fortify::authenticateUsingPasskeys();
 /* @end-passkeys */
 ```
 
-JS and JSX files can use block comments with braces:
+JSX files may use block comments with braces:
 
 ```tsx
 {/* @passkeys */}
@@ -143,5 +150,20 @@ JS and JSX files can use block comments with braces:
 {/* @end-passkeys */}
 ```
 
-`removeSectionMarkers('passkeys')` keeps the code and removes the markers.
-`removeSection('passkeys')` removes both the markers and the code inside them.
+`removeSectionMarkers('passkeys')` keeps the code and removes the markers. `removeSection('passkeys')` removes both.
+
+## Contributing
+
+Thank you for considering contributing to Chisel! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+
+## Code of Conduct
+
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+
+## Security Vulnerabilities
+
+Please review [our security policy](https://github.com/laravel/chisel/security/policy) on how to report security vulnerabilities.
+
+## License
+
+Laravel Chisel is open-sourced software licensed under the [MIT license](LICENSE.md).
