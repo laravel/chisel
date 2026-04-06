@@ -7,9 +7,7 @@
 
 ## Introduction
 
-Laravel Chisel provides primitives for building post-install scripts that remove unwanted features from Laravel starter kits.
-
-A starter kit includes a `chisel.php` script that declares the available features and what to do when each one is selected or deselected. The installer collects the user's choices and passes them to Chisel for execution.
+Laravel Chisel provides primitives for building post-install scripts that remove unwanted features from Laravel starter kits. Compatible starter kits include a `chisel.php` script that defines the optional features and the file mutations needed to remove them.
 
 ## Installation
 
@@ -19,7 +17,7 @@ composer require laravel/chisel
 
 ## Usage
 
-A typical chisel script defines questions and branches on the answers:
+Here is an example chisel.php script that allows a developer to choose their authentication features:
 
 ```php
 <?php
@@ -71,22 +69,34 @@ return Chisel::script(dirname(__DIR__))
     );
 ```
 
-An Artisan command in the starter kit can use `questions()` to render [Laravel Prompts](https://laravel.com/docs/prompts) and then execute the script:
+Although the questions are defined in the `chisel.php` file, an external process such as an Artisan command is responsible for rendering them with [Laravel Prompts](https://laravel.com/docs/prompts) and passing the answers to Chisel's `run()` method. An example Artisan command might look like this:
 
 ```php
-$script = require base_path('chisel.php');
+use Illuminate\Console\Command;
+use function Laravel\Prompts\multiselect;
 
-$answers = [
-    'auth_features' => multiselect(
-        label: $script->questions()[0]->label,
-        options: $script->questions()[0]->options,
-        default: $script->questions()[0]->default ?? [],
-        required: $script->questions()[0]->required,
-        hint: $script->questions()[0]->hint,
-    ),
-];
+class InstallFeatures extends Command
+{
+    protected $signature = 'install:features';
 
-$script->run($answers);
+    public function handle(): void
+    {
+        $script = require base_path('chisel.php');
+        $question = $script->questions()[0];
+
+        $answers = [
+            $question->name => multiselect(
+                label: $question->label,
+                options: $question->options,
+                default: $question->default ?? [],
+                required: $question->required,
+                hint: $question->hint,
+            ),
+        ];
+
+        $script->run($answers);
+    }
+}
 ```
 
 ## Script Definitions
