@@ -17,7 +17,7 @@ composer require laravel/chisel
 
 ## Usage
 
-Here is an example chisel.php script that allows a developer to choose their authentication features:
+An example `chisel.php` script might look like this:
 
 ```php
 <?php
