@@ -192,6 +192,57 @@ it('ignores missing files during subtractive mutations', function (): void {
         ->and($this->tempDir.'/tests/Feature/Auth/TwoFactorTest.php')->not->toBeFile();
 });
 
+it('removes react section markers when chisel markers share a line with code', function (): void {
+    mkdir($this->tempDir.'/resources/js/components', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/resources/js/components/InlineSharedProps.tsx',
+        "/* @chisel-2fa-or-passkeys */ props: Props /* @end-chisel-2fa-or-passkeys */,\n",
+    );
+
+    Chisel::in($this->tempDir)
+        ->file('resources/js/components/InlineSharedProps.tsx')
+        ->removeSectionMarkers('chisel-2fa-or-passkeys');
+
+    expect(file_get_contents($this->tempDir.'/resources/js/components/InlineSharedProps.tsx'))
+        ->toBe("props: Props,\n");
+});
+
+it('removes adjacent react sections when multiple chisel blocks share a line', function (): void {
+    mkdir($this->tempDir.'/resources/js/components', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/resources/js/components/InlineFeatureProps.tsx',
+        "props: { /* @chisel-2fa */ foo, /* @end-chisel-2fa*/ /* @chisel-passkeys */ bar, /* @end-chisel-passkeys*/ }\n",
+    );
+
+    $chisel = Chisel::in($this->tempDir);
+
+    $chisel->file('resources/js/components/InlineFeatureProps.tsx')->removeSection('chisel-2fa');
+    $chisel->file('resources/js/components/InlineFeatureProps.tsx')->removeSectionMarkers('chisel-passkeys');
+
+    expect(file_get_contents($this->tempDir.'/resources/js/components/InlineFeatureProps.tsx'))
+        ->toBe("props: { bar, }\n");
+});
+
+it('does not rewrite unrelated content when section tag is missing', function (): void {
+    mkdir($this->tempDir.'/resources/js/components', 0777, true);
+
+    $contents = "const x = \"a  b\";\n\nconst y = 1;\n";
+
+    file_put_contents(
+        $this->tempDir.'/resources/js/components/NoTag.tsx',
+        $contents,
+    );
+
+    Chisel::in($this->tempDir)
+        ->file('resources/js/components/NoTag.tsx')
+        ->removeSectionMarkers('missing-tag');
+
+    expect(file_get_contents($this->tempDir.'/resources/js/components/NoTag.tsx'))
+        ->toBe($contents);
+});
+
 it('runs npm remove in the project directory', function (): void {
     $bin = $this->tempDir.'/bin';
     $log = $this->tempDir.'/npm.log';

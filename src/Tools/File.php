@@ -48,72 +48,39 @@ class File
         $this->rewriteSection($file, $tag, keepContents: false);
     }
 
-    /**
-     * @return array{start: array<int, string>, end: array<int, string>}
-     */
-    protected function blockPatterns(string $tag): array
-    {
-        $escapedTag = preg_quote($tag, '/');
-
-        return [
-            'start' => [
-                '/^\s*\{?\/\*\s*@'.$escapedTag.'\s*\*\/\}?\s*$/',
-                '/^\s*<!--\s*@'.$escapedTag.'\s*-->\s*$/',
-                '/^\s*\{\{--\s*@'.$escapedTag.'\s*--\}\}\s*$/',
-            ],
-            'end' => [
-                '/^\s*\{?\/\*\s*@end-'.$escapedTag.'\s*\*\/\}?\s*$/',
-                '/^\s*<!--\s*@end-'.$escapedTag.'\s*-->\s*$/',
-                '/^\s*\{\{--\s*@end-'.$escapedTag.'\s*--\}\}\s*$/',
-            ],
-        ];
-    }
-
     protected function rewriteSection(string $file, string $tag, bool $keepContents): void
     {
         if (! $this->exists($file)) {
             return;
         }
 
-        $lines = explode("\n", $this->read($file));
-        ['start' => $startPatterns, 'end' => $endPatterns] = $this->blockPatterns($tag);
+        $content = $this->read($file);
+        $escapedTag = preg_quote($tag, '/');
 
-        $result = [];
-        $inBlock = false;
+        $styles = [
+            ['\{?\/\*', '\*\/\}?'],
+            ['<!--', '-->'],
+            ['\{\{--', '--\}\}'],
+        ];
 
-        foreach ($lines as $line) {
-            if ($this->matchesAnyPattern($line, $startPatterns)) {
-                $inBlock = true;
+        foreach ($styles as [$open, $close]) {
+            $start = $open.'\s*@'.$escapedTag.'\s*'.$close;
+            $end = $open.'\s*@end-'.$escapedTag.'\s*'.$close;
 
-                continue;
-            }
-
-            if ($inBlock && $this->matchesAnyPattern($line, $endPatterns)) {
-                $inBlock = false;
-
-                continue;
-            }
-
-            if ($keepContents || ! $inBlock) {
-                $result[] = $line;
-            }
-        }
-
-        $this->write($file, implode("\n", $result));
-    }
-
-    /**
-     * @param  array<int, string>  $patterns
-     */
-    protected function matchesAnyPattern(string $line, array $patterns): bool
-    {
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $line)) {
-                return true;
+            if ($keepContents) {
+                // Drop marker-only lines first, then handle inline markers.
+                $content = preg_replace('/^\h*'.$start.'\h*\R?/m', '', $content);
+                $content = preg_replace('/^\h*'.$end.'\h*\R?/m', '', $content);
+                $content = preg_replace('/'.$start.'\h*/', '', $content);
+                $content = preg_replace('/\h*'.$end.'/', '', $content);
+            } else {
+                // Remove full blocks, including marker-only multi-line sections and inline sections.
+                $content = preg_replace('/^\h*'.$start.'\h*\R.*?^\h*'.$end.'\h*(?:\R|$)/ms', '', $content);
+                $content = preg_replace('/'.$start.'.*?'.$end.'\h*/s', '', $content);
             }
         }
 
-        return false;
+        $this->write($file, $content);
     }
 
     protected function read(string $file): string
