@@ -2,26 +2,6 @@
 
 use Laravel\Chisel\NodePackageManager;
 
-beforeEach(function (): void {
-    $this->tempDir = __DIR__.'/../tests-output/package-manager-'.uniqid();
-
-    mkdir($this->tempDir, 0777, true);
-});
-
-afterEach(function (): void {
-    if (! file_exists($this->tempDir)) {
-        return;
-    }
-
-    if (PHP_OS_FAMILY === 'Windows') {
-        system("rd /s /q \"{$this->tempDir}\"");
-
-        return;
-    }
-
-    system("rm -rf \"{$this->tempDir}\"");
-});
-
 dataset('package-managers', [
     'npm' => [
         NodePackageManager::NPM,
