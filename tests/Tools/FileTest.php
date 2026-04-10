@@ -2,83 +2,126 @@
 
 use Laravel\Chisel\Chisel;
 
-it('applies subtractive file mutations', function (): void {
-    mkdir($this->tempDir.'/config', 0777, true);
-    mkdir($this->tempDir.'/resources/js/pages/auth', 0777, true);
-    mkdir($this->tempDir.'/resources/js/pages/settings', 0777, true);
-    mkdir($this->tempDir.'/routes', 0777, true);
-    mkdir($this->tempDir.'/resources/views/settings', 0777, true);
-    mkdir($this->tempDir.'/tests/Feature/Auth', 0777, true);
-
+it('replaces matching content in a file', function (): void {
     file_put_contents($this->tempDir.'/composer.json', '"laravel/fortify": "dev-add-passkey-support#242c342"');
-    file_put_contents($this->tempDir.'/config/fortify.php', "Features::registration(),\nFeatures::emailVerification(),\nFeatures::resetPasswords(),\n");
-    file_put_contents($this->tempDir.'/resources/js/pages/auth/login.tsx', "{/* @passkeys */}\n<button>Passkey</button>\n{/* @end-passkeys */}\n");
-    file_put_contents($this->tempDir.'/resources/js/pages/settings/Security.vue', "<!-- @passkeys -->\n<div>Passkey settings</div>\n<!-- @end-passkeys -->\n");
-    file_put_contents($this->tempDir.'/routes/settings.php', "before\n/* @2fa */\nremove me\n/* @end-2fa */\nafter\n");
-    file_put_contents($this->tempDir.'/routes/profile.php', "start\n/* @2fa */\nremove me too\n/* @end-2fa */\nfinish\n");
-    file_put_contents($this->tempDir.'/resources/views/settings/security.blade.php', "hello\n{{-- @2fa --}}\nremove blade section\n{{-- @end-2fa --}}\nworld\n");
-    file_put_contents($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php', 'x');
-    file_put_contents($this->tempDir.'/tests/Feature/Auth/TwoFactorTest.php', 'y');
 
-    $chisel = Chisel::in($this->tempDir);
-
-    $chisel->file('composer.json')->replace(
+    Chisel::in($this->tempDir)->file('composer.json')->replace(
         '"laravel/fortify": "dev-add-passkey-support#242c342"',
         '"laravel/fortify": "^1.30"',
     );
-    $chisel->file('config/fortify.php')->removeLinesContaining('Features::emailVerification()');
-    $chisel->file('resources/js/pages/auth/login.tsx')->removeSectionMarkers('passkeys');
-    $chisel->file('resources/js/pages/settings/Security.vue')->removeSectionMarkers('passkeys');
-    $chisel->files(
+
+    expect(file_get_contents($this->tempDir.'/composer.json'))->toBe('"laravel/fortify": "^1.30"');
+});
+
+it('removes matching single lines from a file', function (): void {
+    mkdir($this->tempDir.'/config', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/config/fortify.php',
+        "Features::registration(),\nFeatures::emailVerification(),\nFeatures::resetPasswords(),\n",
+    );
+
+    Chisel::in($this->tempDir)->file('config/fortify.php')->removeLinesContaining('Features::emailVerification()');
+
+    expect(file_get_contents($this->tempDir.'/config/fortify.php'))
+        ->toBe("Features::registration(),\nFeatures::resetPasswords(),\n");
+});
+
+it('removes section markers while keeping content in vue comments', function (): void {
+    mkdir($this->tempDir.'/resources/js/pages/settings', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/resources/js/pages/settings/Security.vue',
+        "<!-- @passkeys -->\n<div>Passkey settings</div>\n<!-- @end-passkeys -->\n",
+    );
+
+    Chisel::in($this->tempDir)
+        ->file('resources/js/pages/settings/Security.vue')
+        ->removeSectionMarkers('passkeys');
+
+    expect(file_get_contents($this->tempDir.'/resources/js/pages/settings/Security.vue'))
+        ->toBe("<div>Passkey settings</div>\n");
+});
+
+it('removes tagged sections from multiple files', function (): void {
+    mkdir($this->tempDir.'/routes', 0777, true);
+    mkdir($this->tempDir.'/resources/views/settings', 0777, true);
+
+    file_put_contents($this->tempDir.'/routes/settings.php', "before\n/* @2fa */\nremove me\n/* @end-2fa */\nafter\n");
+    file_put_contents($this->tempDir.'/routes/profile.php', "start\n/* @2fa */\nremove me too\n/* @end-2fa */\nfinish\n");
+    file_put_contents($this->tempDir.'/resources/views/settings/security.blade.php', "hello\n{{-- @2fa --}}\nremove blade section\n{{-- @end-2fa --}}\nworld\n");
+
+    Chisel::in($this->tempDir)->files(
         'routes/settings.php',
         'routes/profile.php',
         'resources/views/settings/security.blade.php',
     )->removeSection('2fa');
-    $chisel->files(
+
+    expect(file_get_contents($this->tempDir.'/routes/settings.php'))->toBe("before\nafter\n")
+        ->and(file_get_contents($this->tempDir.'/routes/profile.php'))->toBe("start\nfinish\n")
+        ->and(file_get_contents($this->tempDir.'/resources/views/settings/security.blade.php'))->toBe("hello\nworld\n");
+});
+
+it('deletes multiple files', function (): void {
+    mkdir($this->tempDir.'/tests/Feature/Auth', 0777, true);
+
+    file_put_contents($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php', 'x');
+    file_put_contents($this->tempDir.'/tests/Feature/Auth/TwoFactorTest.php', 'y');
+
+    Chisel::in($this->tempDir)->files(
         'tests/Feature/Auth/PasskeyTest.php',
         'tests/Feature/Auth/TwoFactorTest.php',
     )->delete();
 
-    expect(file_get_contents($this->tempDir.'/composer.json'))->toBe('"laravel/fortify": "^1.30"')
-        ->and(file_get_contents($this->tempDir.'/config/fortify.php'))->not->toContain('Features::emailVerification()')
-        ->and(file_get_contents($this->tempDir.'/resources/js/pages/auth/login.tsx'))->toBe("<button>Passkey</button>\n")
-        ->and(file_get_contents($this->tempDir.'/resources/js/pages/settings/Security.vue'))->toBe("<div>Passkey settings</div>\n")
-        ->and(file_get_contents($this->tempDir.'/routes/settings.php'))->toBe("before\nafter\n")
-        ->and(file_get_contents($this->tempDir.'/routes/profile.php'))->toBe("start\nfinish\n")
-        ->and(file_get_contents($this->tempDir.'/resources/views/settings/security.blade.php'))->toBe("hello\nworld\n")
-        ->and($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php')->not->toBeFile()
+    expect($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php')->not->toBeFile()
         ->and($this->tempDir.'/tests/Feature/Auth/TwoFactorTest.php')->not->toBeFile();
 });
 
-it('ignores missing files during subtractive mutations', function (): void {
+it('ignores missing files when removing section markers from multiple targets', function (): void {
     mkdir($this->tempDir.'/resources/js/pages/auth', 0777, true);
-    mkdir($this->tempDir.'/routes', 0777, true);
 
-    file_put_contents($this->tempDir.'/resources/js/pages/auth/login.tsx', "{/* @passkeys */}\n<button>Passkey</button>\n{/* @end-passkeys */}\n");
-    file_put_contents($this->tempDir.'/routes/settings.php', "before\n/* @2fa */\nremove me\n/* @end-2fa */\nafter\n");
+    file_put_contents(
+        $this->tempDir.'/resources/js/pages/auth/login.tsx',
+        "{/* @passkeys */}\n<button>Passkey</button>\n{/* @end-passkeys */}\n",
+    );
 
-    $chisel = Chisel::in($this->tempDir);
-
-    $chisel->files(
+    Chisel::in($this->tempDir)->files(
         'resources/js/pages/auth/login.tsx',
         'resources/js/pages/auth/confirm-password.tsx',
     )->removeSectionMarkers('passkeys');
 
-    $chisel->files(
+    expect(file_get_contents($this->tempDir.'/resources/js/pages/auth/login.tsx'))->toBe("<button>Passkey</button>\n")
+        ->and($this->tempDir.'/resources/js/pages/auth/confirm-password.tsx')->not->toBeFile();
+});
+
+it('ignores missing files when removing tagged sections from multiple targets', function (): void {
+    mkdir($this->tempDir.'/routes', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/routes/settings.php',
+        "before\n/* @2fa */\nremove me\n/* @end-2fa */\nafter\n",
+    );
+
+    Chisel::in($this->tempDir)->files(
         'routes/settings.php',
         'routes/profile.php',
     )->removeSection('2fa');
 
-    $chisel->files(
+    expect(file_get_contents($this->tempDir.'/routes/settings.php'))->toBe("before\nafter\n")
+        ->and($this->tempDir.'/routes/profile.php')->not->toBeFile();
+});
+
+it('ignores missing files when deleting multiple targets', function (): void {
+    mkdir($this->tempDir.'/tests/Feature/Auth', 0777, true);
+
+    file_put_contents($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php', 'x');
+
+    Chisel::in($this->tempDir)->files(
         'tests/Feature/Auth/PasskeyTest.php',
         'tests/Feature/Auth/TwoFactorTest.php',
     )->delete();
 
-    expect(file_get_contents($this->tempDir.'/resources/js/pages/auth/login.tsx'))->toBe("<button>Passkey</button>\n")
-        ->and(file_get_contents($this->tempDir.'/routes/settings.php'))->toBe("before\nafter\n")
-        ->and($this->tempDir.'/resources/js/pages/auth/confirm-password.tsx')->not->toBeFile()
-        ->and($this->tempDir.'/routes/profile.php')->not->toBeFile()
-        ->and($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php')->not->toBeFile()
+    expect($this->tempDir.'/tests/Feature/Auth/PasskeyTest.php')->not->toBeFile()
         ->and($this->tempDir.'/tests/Feature/Auth/TwoFactorTest.php')->not->toBeFile();
 });
 
