@@ -63,6 +63,8 @@ class File
             ['\{\{--', '--\}\}'],
         ];
 
+        $this->validateMarkers($content, $file, $tag, $styles, $escapedTag);
+
         foreach ($styles as [$open, $close]) {
             $start = $open.'\s*@'.$escapedTag.'\s*'.$close;
             $end = $open.'\s*@end-'.$escapedTag.'\s*'.$close;
@@ -81,6 +83,33 @@ class File
         }
 
         $this->write($file, $content);
+    }
+
+    /**
+     * @param  list<array{string, string}>  $styles
+     */
+    protected function validateMarkers(string $content, string $file, string $tag, array $styles, string $escapedTag): void
+    {
+        $markers = [];
+
+        foreach ($styles as [$open, $close]) {
+            preg_match_all('/'.$open.'\s*@(?:end-)?'.$escapedTag.'\s*'.$close.'/', $content, $matches, PREG_OFFSET_CAPTURE);
+
+            foreach ($matches[0] as [$match, $offset]) {
+                $isEnd = (bool) preg_match('/@end-/', $match);
+                $markers[] = ['offset' => $offset, 'end' => $isEnd];
+            }
+        }
+
+        usort($markers, fn (array $a, array $b): int => $a['offset'] <=> $b['offset']);
+
+        for ($i = 1; $i < count($markers); $i++) {
+            if ($markers[$i]['end'] === $markers[$i - 1]['end']) {
+                $type = $markers[$i]['end'] ? 'closing' : 'opening';
+
+                throw new \RuntimeException("Consecutive {$type} markers for @{$tag} in {$file}.");
+            }
+        }
     }
 
     protected function read(string $file): string

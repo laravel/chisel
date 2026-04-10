@@ -243,6 +243,65 @@ it('does not rewrite unrelated content when section tag is missing', function ()
         ->toBe($contents);
 });
 
+it('can remove nested sections with different tags', function (): void {
+    mkdir($this->tempDir.'/resources/js/components', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/resources/js/components/Security.tsx',
+        <<<'TSX'
+/* @chisel-2fa-or-passkeys */
+type Props = Record<string, never> & {
+    /* @chisel-2fa */
+    canManageTwoFactor?: boolean;
+    requiresConfirmation?: boolean;
+    twoFactorEnabled?: boolean;
+    /* @end-chisel-2fa */
+    /* @chisel-passkeys */
+    canManagePasskeys?: boolean;
+    passkeys?: Passkey[];
+    /* @end-chisel-passkeys */
+};
+/* @end-chisel-2fa-or-passkeys */
+TSX,
+    );
+
+    $chisel = Chisel::in($this->tempDir);
+    $file = 'resources/js/components/Security.tsx';
+
+    $chisel->file($file)->removeSection('chisel-2fa');
+    $chisel->file($file)->removeSectionMarkers('chisel-passkeys');
+
+    expect(file_get_contents($this->tempDir.'/'.$file))->toBe(
+        "type Props = Record<string, never> & {\n    canManagePasskeys?: boolean;\n    passkeys?: Passkey[];\n};\n",
+    );
+});
+
+it('throws on consecutive opening markers', function (): void {
+    mkdir($this->tempDir.'/resources/js', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/resources/js/bad.tsx',
+        "/* @chisel-feat */\n/* @chisel-feat */\ncontent\n/* @end-chisel-feat */\n",
+    );
+
+    Chisel::in($this->tempDir)
+        ->file('resources/js/bad.tsx')
+        ->removeSection('chisel-feat');
+})->throws(RuntimeException::class, 'Consecutive opening markers for @chisel-feat in resources/js/bad.tsx.');
+
+it('throws on consecutive closing markers', function (): void {
+    mkdir($this->tempDir.'/resources/js', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/resources/js/bad.tsx',
+        "/* @chisel-feat */\ncontent\n/* @end-chisel-feat */\n/* @end-chisel-feat */\n",
+    );
+
+    Chisel::in($this->tempDir)
+        ->file('resources/js/bad.tsx')
+        ->removeSectionMarkers('chisel-feat');
+})->throws(RuntimeException::class, 'Consecutive closing markers for @chisel-feat in resources/js/bad.tsx.');
+
 it('runs npm remove in the project directory', function (): void {
     $bin = $this->tempDir.'/bin';
     $log = $this->tempDir.'/npm.log';
