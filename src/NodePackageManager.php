@@ -66,6 +66,26 @@ enum NodePackageManager: string
         };
     }
 
+    public function runCommand(string $script): string
+    {
+        return match ($this) {
+            self::NPM => "npm run {$script}",
+            self::YARN => "yarn {$script}",
+            self::PNPM => "pnpm {$script}",
+            self::BUN => "bun run {$script}",
+        };
+    }
+
+    public function runProcessCommand(string $script): array
+    {
+        return match ($this) {
+            self::NPM => ['npm', 'run', $script],
+            self::YARN => ['yarn', $script],
+            self::PNPM => ['pnpm', $script],
+            self::BUN => ['bun', 'run', $script],
+        };
+    }
+
     public function removeProcessCommand(string ...$packages): array
     {
         return match ($this) {

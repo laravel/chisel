@@ -71,14 +71,14 @@ class File
 
             if ($keepContents) {
                 // Drop marker-only lines first, then handle inline markers.
-                $content = preg_replace('/^\h*'.$start.'\h*\R?/m', '', $content);
-                $content = preg_replace('/^\h*'.$end.'\h*\R?/m', '', $content);
-                $content = preg_replace('/'.$start.'\h*/', '', $content);
-                $content = preg_replace('/\h*'.$end.'/', '', $content);
+                $content = preg_replace('/^\h*'.$start.'\h*\R?/m', '', (string) $content);
+                $content = preg_replace('/^\h*'.$end.'\h*\R?/m', '', (string) $content);
+                $content = preg_replace('/'.$start.'\h*/', '', (string) $content);
+                $content = preg_replace('/\h*'.$end.'/', '', (string) $content);
             } else {
                 // Remove full blocks, including marker-only multi-line sections and inline sections.
-                $content = preg_replace('/^\h*'.$start.'\h*\R.*?^\h*'.$end.'\h*(?:\R|$)/ms', '', $content);
-                $content = preg_replace('/'.$start.'.*?'.$end.'\h*/s', '', $content);
+                $content = preg_replace('/^\h*'.$start.'\h*\R.*?^\h*'.$end.'\h*(?:\R|$)/ms', '', (string) $content);
+                $content = preg_replace('/'.$start.'.*?'.$end.'\h*/s', '', (string) $content);
             }
         }
 
@@ -103,7 +103,9 @@ class File
 
         usort($markers, fn (array $a, array $b): int => $a['offset'] <=> $b['offset']);
 
-        for ($i = 1; $i < count($markers); $i++) {
+        $counter = count($markers);
+
+        for ($i = 1; $i < $counter; $i++) {
             if ($markers[$i]['end'] === $markers[$i - 1]['end']) {
                 $type = $markers[$i]['end'] ? 'closing' : 'opening';
 
