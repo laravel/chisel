@@ -80,7 +80,7 @@ class Source
 
     public function __destruct()
     {
-        if (!$this->saved) {
+        if (! $this->saved) {
             $this->save();
         }
     }
