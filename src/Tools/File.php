@@ -4,7 +4,10 @@ namespace Laravel\Chisel\Tools;
 
 class File
 {
-    public function __construct(protected string $directory) {}
+    public function __construct(protected string $directory)
+    {
+        //
+    }
 
     public function delete(string ...$paths): void
     {

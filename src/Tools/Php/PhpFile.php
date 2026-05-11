@@ -16,7 +16,10 @@ class PhpFile
     /** @var array<NodeVisitorAbstract> */
     protected array $edits = [];
 
-    public function __construct(protected string $path) {}
+    public function __construct(protected string $path)
+    {
+        //
+    }
 
     public function removeTrait(string $trait): static
     {
