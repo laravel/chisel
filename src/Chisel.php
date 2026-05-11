@@ -9,7 +9,10 @@ use Laravel\Chisel\Tools\Php\PhpFile;
 /** @phpstan-consistent-constructor */
 class Chisel
 {
-    protected function __construct(protected string $directory) {}
+    protected function __construct(protected string $directory)
+    {
+        //
+    }
 
     public static function in(string $directory): static
     {
