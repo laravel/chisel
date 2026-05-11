@@ -16,6 +16,8 @@ class Source
     /** @var array<NodeVisitorAbstract> */
     protected array $edits = [];
 
+    protected bool $saved = false;
+
     public function __construct(protected string $path)
     {
         //
@@ -44,7 +46,9 @@ class Source
 
     public function save(): void
     {
-        if ($this->edits === []) {
+        $this->saved = true;
+
+        if ($this->edits === [] || ! file_exists($this->path)) {
             return;
         }
 
@@ -76,6 +80,8 @@ class Source
 
     public function __destruct()
     {
-        $this->save();
+        if (!$this->saved) {
+            $this->save();
+        }
     }
 }
