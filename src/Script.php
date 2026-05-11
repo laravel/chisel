@@ -56,6 +56,10 @@ class Script
         return $this;
     }
 
+    /**
+     * @param  callable(Chisel): void|null  $then
+     * @param  callable(Chisel): void|null  $else
+     */
     public function selected(string $key, string $value, ?callable $then = null, ?callable $else = null): static
     {
         $this->mutations[] = fn (Chisel $chisel, array $answers) => $this->handleAnswer(
@@ -71,6 +75,8 @@ class Script
 
     /**
      * @param  array<int, string>  $values
+     * @param  callable(Chisel): void|null  $then
+     * @param  callable(Chisel): void|null  $else
      */
     public function selectedAny(string $key, array $values, ?callable $then = null, ?callable $else = null): static
     {
