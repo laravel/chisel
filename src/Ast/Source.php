@@ -1,17 +1,17 @@
 <?php
 
-namespace Laravel\Chisel\Tools\Php;
+namespace Laravel\Chisel\Ast;
 
-use Laravel\Chisel\Tools\Php\Visitors\RemoveImportVisitor;
-use Laravel\Chisel\Tools\Php\Visitors\RemoveInterfaceVisitor;
-use Laravel\Chisel\Tools\Php\Visitors\RemoveTraitVisitor;
+use Laravel\Chisel\Ast\Visitors\RemoveImportVisitor;
+use Laravel\Chisel\Ast\Visitors\RemoveInterfaceVisitor;
+use Laravel\Chisel\Ast\Visitors\RemoveTraitVisitor;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\CloningVisitor;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter\Standard;
 
-class PhpFile
+class Source
 {
     /** @var array<NodeVisitorAbstract> */
     protected array $edits = [];

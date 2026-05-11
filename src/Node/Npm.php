@@ -1,13 +1,12 @@
 <?php
 
-namespace Laravel\Chisel\Tools;
+namespace Laravel\Chisel\Node;
 
 use Illuminate\Process\Factory;
-use Laravel\Chisel\NodePackageManager;
 
 class Npm
 {
-    protected ?NodePackageManager $packageManager = null;
+    protected ?PackageManager $packageManager = null;
 
     public function __construct(protected string $directory)
     {
@@ -32,16 +31,16 @@ class Npm
             ->throw();
     }
 
-    public function packageManager(): NodePackageManager
+    public function packageManager(): PackageManager
     {
         return $this->packageManager ??= $this->detectFromLockFile()
             ?? $this->detectFromComposerScripts()
-            ?? NodePackageManager::NPM;
+            ?? PackageManager::NPM;
     }
 
-    protected function detectFromLockFile(): ?NodePackageManager
+    protected function detectFromLockFile(): ?PackageManager
     {
-        foreach (NodePackageManager::nonNpmManagers() as $packageManager) {
+        foreach (PackageManager::nonNpmManagers() as $packageManager) {
             foreach ($packageManager->lockFiles() as $lockFile) {
                 if (file_exists($this->directory.'/'.$lockFile)) {
                     return $packageManager;
@@ -52,7 +51,7 @@ class Npm
         return null;
     }
 
-    protected function detectFromComposerScripts(): ?NodePackageManager
+    protected function detectFromComposerScripts(): ?PackageManager
     {
         $composerJson = $this->directory.'/composer.json';
 
@@ -73,7 +72,7 @@ class Npm
                     continue;
                 }
 
-                foreach (NodePackageManager::nonNpmManagers() as $packageManager) {
+                foreach (PackageManager::nonNpmManagers() as $packageManager) {
                     $pattern = '/(^|[^[:alnum:]_-])'.preg_quote($packageManager->value, '/').'(?=\s|$)/';
 
                     if (preg_match($pattern, $command) === 1) {

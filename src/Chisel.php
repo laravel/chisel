@@ -2,9 +2,10 @@
 
 namespace Laravel\Chisel;
 
-use Laravel\Chisel\Tools\File;
-use Laravel\Chisel\Tools\Npm;
-use Laravel\Chisel\Tools\Php\PhpFile;
+use Laravel\Chisel\Ast\Source;
+use Laravel\Chisel\Filesystem\File;
+use Laravel\Chisel\Filesystem\PendingFiles;
+use Laravel\Chisel\Node\Npm;
 
 /** @phpstan-consistent-constructor */
 class Chisel
@@ -41,9 +42,9 @@ class Chisel
         return $this->npm ??= new Npm($this->directory);
     }
 
-    public function phpFile(string $path): PhpFile
+    public function php(string $path): Source
     {
-        return new PhpFile($this->path($path));
+        return new Source($this->path($path));
     }
 
     private function path(string $path): string

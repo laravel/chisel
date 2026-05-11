@@ -48,7 +48,7 @@ return Chisel::script(dirname(__DIR__))
             )->removeSectionMarkers('email-verification');
         },
         else: function (Chisel $c) {
-            $c->phpFile('app/Models/User.php')
+            $c->php('app/Models/User.php')
                 ->removeImport('Illuminate\Contracts\Auth\MustVerifyEmail')
                 ->removeInterface('MustVerifyEmail');
 
@@ -101,43 +101,43 @@ class InstallFeatures extends Command
 
 ## Script Definitions
 
-| Method | Purpose |
-|---|---|
-| `Chisel::script($directory)` | Create a script definition |
-| `Question::multiselect(...)` | Define a multiselect question |
-| `questions([...])` | Set the script's questions |
-| `questions()` | Retrieve the registered questions |
-| `apply($callback)` | Register an unconditional mutation step |
-| `selected($key, $value, then:, else:)` | Branch on a multiselect answer |
+| Method                                     | Purpose                                          |
+| ------------------------------------------ | ------------------------------------------------ |
+| `Chisel::script($directory)`               | Create a script definition                       |
+| `Question::multiselect(...)`               | Define a multiselect question                    |
+| `questions([...])`                         | Set the script's questions                       |
+| `questions()`                              | Retrieve the registered questions                |
+| `apply($callback)`                         | Register an unconditional mutation step          |
+| `selected($key, $value, then:, else:)`     | Branch on a multiselect answer                   |
 | `selectedAny($key, $values, then:, else:)` | Branch when any of the given values are selected |
-| `run($answers)` | Execute the registered mutations |
+| `run($answers)`                            | Execute the registered mutations                 |
 
 ## File Mutations
 
 `file($path)` targets a single file. `files(...$paths)` targets multiple files.
 
-| Method | Purpose |
-|---|---|
-| `replace($search, $replace)` | Replace a string |
-| `removeLinesContaining($content)` | Remove lines containing a string |
-| `removeSectionMarkers($tag)` | Strip section markers, keep the content |
-| `removeSection($tag)` | Remove section markers and the content inside them |
-| `delete()` | Delete the targeted files |
+| Method                            | Purpose                                            |
+| --------------------------------- | -------------------------------------------------- |
+| `replace($search, $replace)`      | Replace a string                                   |
+| `removeLinesContaining($content)` | Remove lines containing a string                   |
+| `removeSectionMarkers($tag)`      | Strip section markers, keep the content            |
+| `removeSection($tag)`             | Remove section markers and the content inside them |
+| `delete()`                        | Delete the targeted files                          |
 
 ## PHP File Mutations
 
-`phpFile($path)` provides AST-based edits. Changes are saved automatically when the object is destroyed.
+`php($path)` provides AST-based edits. Changes are saved automatically when the object is destroyed.
 
-| Method | Purpose |
-|---|---|
-| `removeImport($class)` | Remove a `use` statement |
-| `removeTrait($trait)` | Remove a trait usage from the class |
-| `removeInterface($interface)` | Remove an implemented interface |
+| Method                        | Purpose                             |
+| ----------------------------- | ----------------------------------- |
+| `removeImport($class)`        | Remove a `use` statement            |
+| `removeTrait($trait)`         | Remove a trait usage from the class |
+| `removeInterface($interface)` | Remove an implemented interface     |
 
 ## npm
 
-| Method | Purpose |
-|---|---|
+| Method                        | Purpose                                            |
+| ----------------------------- | -------------------------------------------------- |
 | `npm()->remove(...$packages)` | Remove packages using the detected package manager |
 
 The `npm()` method detects `npm`, `yarn`, `pnpm`, and `bun` automatically.
@@ -155,9 +155,13 @@ Fortify::authenticateUsingPasskeys();
 JSX files may use block comments with braces:
 
 ```tsx
-{/* @passkeys */}
-<PasskeyButton />
-{/* @end-passkeys */}
+{
+    /* @passkeys */
+}
+<PasskeyButton />;
+{
+    /* @end-passkeys */
+}
 ```
 
 `removeSectionMarkers('passkeys')` keeps the code and removes the markers. `removeSection('passkeys')` removes both.

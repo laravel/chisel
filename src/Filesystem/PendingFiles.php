@@ -1,8 +1,6 @@
 <?php
 
-namespace Laravel\Chisel;
-
-use Laravel\Chisel\Tools\File;
+namespace Laravel\Chisel\Filesystem;
 
 class PendingFiles
 {

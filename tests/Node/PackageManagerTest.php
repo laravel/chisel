@@ -1,10 +1,10 @@
 <?php
 
-use Laravel\Chisel\NodePackageManager;
+use Laravel\Chisel\Node\PackageManager;
 
 dataset('package-managers', [
     'npm' => [
-        NodePackageManager::NPM,
+        PackageManager::NPM,
         'npm install',
         ['npm', 'install'],
         'npm run build',
@@ -14,7 +14,7 @@ dataset('package-managers', [
         ['npm', 'remove', 'vite'],
     ],
     'yarn' => [
-        NodePackageManager::YARN,
+        PackageManager::YARN,
         'yarn install',
         ['yarn', 'install'],
         'yarn build',
@@ -24,7 +24,7 @@ dataset('package-managers', [
         ['yarn', 'remove', 'vite'],
     ],
     'pnpm' => [
-        NodePackageManager::PNPM,
+        PackageManager::PNPM,
         'pnpm install',
         ['pnpm', 'install'],
         'pnpm build',
@@ -34,7 +34,7 @@ dataset('package-managers', [
         ['pnpm', 'remove', 'vite'],
     ],
     'bun' => [
-        NodePackageManager::BUN,
+        PackageManager::BUN,
         'bun install',
         ['bun', 'install'],
         'bun run build',
@@ -46,7 +46,7 @@ dataset('package-managers', [
 ]);
 
 it('returns the expected commands for each package manager', function (
-    NodePackageManager $packageManager,
+    PackageManager $packageManager,
     string $installCommand,
     array $installProcessCommand,
     string $buildCommand,

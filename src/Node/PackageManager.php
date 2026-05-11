@@ -1,8 +1,8 @@
 <?php
 
-namespace Laravel\Chisel;
+namespace Laravel\Chisel\Node;
 
-enum NodePackageManager: string
+enum PackageManager: string
 {
     case NPM = 'npm';
     case YARN = 'yarn';

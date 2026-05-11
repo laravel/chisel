@@ -1,6 +1,6 @@
 <?php
 
-namespace Laravel\Chisel\Tools\Php\Visitors;
+namespace Laravel\Chisel\Ast\Visitors;
 
 use PhpParser\Node\Stmt\Use_;
 use PhpParser\Node\UseItem;

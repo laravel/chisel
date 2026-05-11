@@ -1,6 +1,6 @@
 <?php
 
-namespace Laravel\Chisel\Tools;
+namespace Laravel\Chisel\Filesystem;
 
 class File
 {
