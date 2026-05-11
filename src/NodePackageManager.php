@@ -11,31 +11,17 @@ enum NodePackageManager: string
 
     public static function detect(string $directory): self
     {
-        foreach (self::cases() as $packageManager) {
-            if ($packageManager === self::NPM) {
-                continue;
-            }
-
-            foreach ($packageManager->lockFiles() as $lockFile) {
-                if (file_exists($directory.'/'.$lockFile)) {
-                    return $packageManager;
-                }
-            }
-        }
-
-        return self::detectFromComposerScripts($directory) ?? self::NPM;
+        return self::detectFromLockFile($directory) ?? self::detectFromComposerScripts($directory) ?? self::NPM;
     }
 
     public function installCommand(): string
     {
-        return match ($this) {
-            self::NPM => 'npm install',
-            self::YARN => 'yarn install',
-            self::PNPM => 'pnpm install',
-            self::BUN => 'bun install',
-        };
+        return implode(' ', $this->installProcessCommand());
     }
 
+    /**
+     * @return list<string>
+     */
     public function installProcessCommand(): array
     {
         return match ($this) {
@@ -48,14 +34,12 @@ enum NodePackageManager: string
 
     public function buildCommand(): string
     {
-        return match ($this) {
-            self::NPM => 'npm run build',
-            self::YARN => 'yarn build',
-            self::PNPM => 'pnpm build',
-            self::BUN => 'bun run build',
-        };
+        return implode(' ', $this->buildProcessCommand());
     }
 
+    /**
+     * @return list<string>
+     */
     public function buildProcessCommand(): array
     {
         return match ($this) {
@@ -68,14 +52,12 @@ enum NodePackageManager: string
 
     public function runCommand(string $script): string
     {
-        return match ($this) {
-            self::NPM => "npm run {$script}",
-            self::YARN => "yarn {$script}",
-            self::PNPM => "pnpm {$script}",
-            self::BUN => "bun run {$script}",
-        };
+        return implode(' ', $this->runProcessCommand($script));
     }
 
+    /**
+     * @return list<string>
+     */
     public function runProcessCommand(string $script): array
     {
         return match ($this) {
@@ -86,6 +68,14 @@ enum NodePackageManager: string
         };
     }
 
+    public function removeCommand(string ...$packages): string
+    {
+        return implode(' ', $this->removeProcessCommand(...$packages));
+    }
+
+    /**
+     * @return list<string>
+     */
     public function removeProcessCommand(string ...$packages): array
     {
         return match ($this) {
@@ -94,6 +84,19 @@ enum NodePackageManager: string
             self::PNPM => ['pnpm', 'remove', ...$packages],
             self::BUN => ['bun', 'remove', ...$packages],
         };
+    }
+
+    private static function detectFromLockFile(string $directory): ?self
+    {
+        foreach (self::nonNpmManagers() as $packageManager) {
+            foreach ($packageManager->lockFiles() as $lockFile) {
+                if (file_exists($directory.'/'.$lockFile)) {
+                    return $packageManager;
+                }
+            }
+        }
+
+        return null;
     }
 
     private static function detectFromComposerScripts(string $directory): ?self
@@ -117,7 +120,7 @@ enum NodePackageManager: string
                     continue;
                 }
 
-                foreach ([self::YARN, self::PNPM, self::BUN] as $packageManager) {
+                foreach (self::nonNpmManagers() as $packageManager) {
                     $pattern = '/(^|[^[:alnum:]_-])'.preg_quote($packageManager->value, '/').'(?=\s|$)/';
 
                     if (preg_match($pattern, $command) === 1) {
@@ -128,6 +131,14 @@ enum NodePackageManager: string
         }
 
         return null;
+    }
+
+    /**
+     * @return list<self>
+     */
+    private static function nonNpmManagers(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $packageManager) => $packageManager !== self::NPM));
     }
 
     private function lockFiles(): array
