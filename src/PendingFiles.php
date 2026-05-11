@@ -12,7 +12,9 @@ class PendingFiles
     public function __construct(
         protected File $file,
         protected array $paths,
-    ) {}
+    ) {
+        //
+    }
 
     public function delete(): static
     {

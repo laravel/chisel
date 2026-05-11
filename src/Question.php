@@ -2,9 +2,10 @@
 
 namespace Laravel\Chisel;
 
-final readonly class Question
+readonly class Question
 {
     /**
+     * @param  'multiselect'|'select'|'input'  $type
      * @param  array<int|string, string>  $options
      * @param  array<int, int|string>|null  $default
      */
@@ -17,7 +18,9 @@ final readonly class Question
         public bool|string $required = false,
         public string $placeholder = '',
         public string $hint = '',
-    ) {}
+    ) {
+        //
+    }
 
     /**
      * @param  array<int|string, string>  $options
