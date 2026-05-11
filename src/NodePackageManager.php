@@ -9,14 +9,32 @@ enum NodePackageManager: string
     case PNPM = 'pnpm';
     case BUN = 'bun';
 
-    public static function detect(string $directory): self
+    /**
+     * @return list<self>
+     */
+    public static function nonNpmManagers(): array
     {
-        return self::detectFromLockFile($directory) ?? self::detectFromComposerScripts($directory) ?? self::NPM;
+        return array_values(array_filter(self::cases(), fn (self $packageManager) => $packageManager !== self::NPM));
     }
 
     public function installCommand(): string
     {
         return implode(' ', $this->installProcessCommand());
+    }
+
+    public function buildCommand(): string
+    {
+        return implode(' ', $this->buildProcessCommand());
+    }
+
+    public function runCommand(string $script): string
+    {
+        return implode(' ', $this->runProcessCommand($script));
+    }
+
+    public function removeCommand(string ...$packages): string
+    {
+        return implode(' ', $this->removeProcessCommand(...$packages));
     }
 
     /**
@@ -32,11 +50,6 @@ enum NodePackageManager: string
         };
     }
 
-    public function buildCommand(): string
-    {
-        return implode(' ', $this->buildProcessCommand());
-    }
-
     /**
      * @return list<string>
      */
@@ -48,11 +61,6 @@ enum NodePackageManager: string
             self::PNPM => ['pnpm', 'build'],
             self::BUN => ['bun', 'run', 'build'],
         };
-    }
-
-    public function runCommand(string $script): string
-    {
-        return implode(' ', $this->runProcessCommand($script));
     }
 
     /**
@@ -68,11 +76,6 @@ enum NodePackageManager: string
         };
     }
 
-    public function removeCommand(string ...$packages): string
-    {
-        return implode(' ', $this->removeProcessCommand(...$packages));
-    }
-
     /**
      * @return list<string>
      */
@@ -86,62 +89,10 @@ enum NodePackageManager: string
         };
     }
 
-    private static function detectFromLockFile(string $directory): ?self
-    {
-        foreach (self::nonNpmManagers() as $packageManager) {
-            foreach ($packageManager->lockFiles() as $lockFile) {
-                if (file_exists($directory.'/'.$lockFile)) {
-                    return $packageManager;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static function detectFromComposerScripts(string $directory): ?self
-    {
-        $composerJson = $directory.'/composer.json';
-
-        if (! file_exists($composerJson)) {
-            return null;
-        }
-
-        $composer = json_decode(file_get_contents($composerJson), true);
-        $scripts = $composer['scripts'] ?? null;
-
-        if (! is_array($scripts)) {
-            return null;
-        }
-
-        foreach (['dev', 'dev:ssr', 'setup'] as $script) {
-            foreach ((array) ($scripts[$script] ?? []) as $command) {
-                if (! is_string($command)) {
-                    continue;
-                }
-
-                foreach (self::nonNpmManagers() as $packageManager) {
-                    $pattern = '/(^|[^[:alnum:]_-])'.preg_quote($packageManager->value, '/').'(?=\s|$)/';
-
-                    if (preg_match($pattern, $command) === 1) {
-                        return $packageManager;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
     /**
-     * @return list<self>
+     * @return list<string>
      */
-    private static function nonNpmManagers(): array
-    {
-        return array_values(array_filter(self::cases(), fn (self $packageManager) => $packageManager !== self::NPM));
-    }
-
-    private function lockFiles(): array
+    public function lockFiles(): array
     {
         return match ($this) {
             self::NPM => ['package-lock.json'],
