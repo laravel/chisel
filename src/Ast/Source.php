@@ -68,7 +68,7 @@ class Source
             $traverser->addVisitor($edit);
         }
 
-        $traverser->traverse($newStmts);
+        $newStmts = $traverser->traverse($newStmts);
 
         file_put_contents(
             $this->path,

@@ -45,6 +45,25 @@ PHP);
         ->not->toContain('    use HasFactory;');
 });
 
+it('removes imports from files without a namespace declaration', function (): void {
+    $path = $this->tempDir.'/file.php';
+
+    file_put_contents($path, <<<'PHP'
+<?php
+
+use Foo\Bar;
+use Baz\Qux;
+
+class X {}
+PHP);
+
+    (new Source($path))->removeImport('Bar')->save();
+
+    expect(file_get_contents($path))
+        ->not->toContain('use Foo\Bar;')
+        ->toContain('use Baz\Qux;');
+});
+
 it('can save a php file with no queued edits', function (): void {
     $path = $this->tempDir.'/SampleClass.php';
 
