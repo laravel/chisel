@@ -34,8 +34,8 @@ class Npm
 
     public function packageManager(): NodePackageManager
     {
-        return $this->packageManager ??= self::detectFromLockFile()
-            ?? self::detectFromComposerScripts()
+        return $this->packageManager ??= $this->detectFromLockFile()
+            ?? $this->detectFromComposerScripts()
             ?? NodePackageManager::NPM;
     }
 

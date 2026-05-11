@@ -9,6 +9,8 @@ use Laravel\Chisel\Tools\Php\PhpFile;
 /** @phpstan-consistent-constructor */
 class Chisel
 {
+    protected ?Npm $npm = null;
+
     protected function __construct(protected string $directory)
     {
         //
@@ -36,7 +38,7 @@ class Chisel
 
     public function npm(): Npm
     {
-        return new Npm($this->directory);
+        return $this->npm ??= new Npm($this->directory);
     }
 
     public function phpFile(string $path): PhpFile
