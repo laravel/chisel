@@ -95,13 +95,15 @@ class Script
         $selected = (array) $selected;
 
         foreach ($values as $value) {
-            if (in_array($value, $selected)) {
-                if ($then !== null) {
-                    $then($chisel);
-                }
-
-                return;
+            if (! in_array($value, $selected)) {
+                continue;
             }
+
+            if ($then !== null) {
+                $then($chisel);
+            }
+
+            return;
         }
 
         if ($else !== null) {
