@@ -87,12 +87,13 @@ class Script
 
     /**
      * @param  array<int, string>  $values
-     * @param  array<int, string>  $selected
      * @param  callable(Chisel): void|null  $then
      * @param  callable(Chisel): void|null  $else
      */
-    protected function handleAnswer(array $values, array $selected, ?callable $then, ?callable $else, Chisel $chisel): void
+    protected function handleAnswer(array $values, mixed $selected, ?callable $then, ?callable $else, Chisel $chisel): void
     {
+        $selected = (array) $selected;
+
         foreach ($values as $value) {
             if (in_array($value, $selected)) {
                 if ($then !== null) {
