@@ -148,24 +148,24 @@ The `npm()` method detects `npm`, `yarn`, `pnpm`, and `bun` automatically.
 Wrap optional code in comment pairs:
 
 ```php
-/* @passkeys */
+/* @chisel-passkeys */
 Fortify::authenticateUsingPasskeys();
-/* @end-passkeys */
+/* @end-chisel-passkeys */
 ```
 
 JSX files may use block comments with braces:
 
 ```tsx
 {
-    /* @passkeys */
+    /* @chisel-passkeys */
 }
 <PasskeyButton />;
 {
-    /* @end-passkeys */
+    /* @end-chisel-passkeys */
 }
 ```
 
-`removeSectionMarkers('passkeys')` keeps the code and removes the markers. `removeSection('passkeys')` removes both.
+`removeSectionMarkers('passkeys')` keeps the code and removes the markers. `removeSection('passkeys')` removes both. The `chisel-` marker prefix is added automatically.
 
 ## Contributing
 

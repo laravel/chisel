@@ -32,7 +32,7 @@ it('removes section markers while keeping content in vue comments', function ():
 
     file_put_contents(
         $this->tempDir.'/js/file.vue',
-        "<!-- @passkeys -->\n<div>Passkey settings</div>\n<!-- @end-passkeys -->\n",
+        "<!-- @chisel-passkeys -->\n<div>Passkey settings</div>\n<!-- @end-chisel-passkeys -->\n",
     );
 
     Chisel::in($this->tempDir)
@@ -47,9 +47,9 @@ it('removes tagged sections from multiple files', function (): void {
     mkdir($this->tempDir.'/php', 0777, true);
     mkdir($this->tempDir.'/blade', 0777, true);
 
-    file_put_contents($this->tempDir.'/php/file1.php', "before\n/* @2fa */\nremove me\n/* @end-2fa */\nafter\n");
-    file_put_contents($this->tempDir.'/php/file2.php', "start\n/* @2fa */\nremove me too\n/* @end-2fa */\nfinish\n");
-    file_put_contents($this->tempDir.'/blade/file.blade.php', "hello\n{{-- @2fa --}}\nremove blade section\n{{-- @end-2fa --}}\nworld\n");
+    file_put_contents($this->tempDir.'/php/file1.php', "before\n/* @chisel-2fa */\nremove me\n/* @end-chisel-2fa */\nafter\n");
+    file_put_contents($this->tempDir.'/php/file2.php', "start\n/* @chisel-2fa */\nremove me too\n/* @end-chisel-2fa */\nfinish\n");
+    file_put_contents($this->tempDir.'/blade/file.blade.php', "hello\n{{-- @chisel-2fa --}}\nremove blade section\n{{-- @end-chisel-2fa --}}\nworld\n");
 
     Chisel::in($this->tempDir)->files(
         'php/file1.php',
@@ -82,7 +82,7 @@ it('ignores missing files when removing section markers from multiple targets', 
 
     file_put_contents(
         $this->tempDir.'/js/file1.tsx',
-        "{/* @passkeys */}\n<button>Passkey</button>\n{/* @end-passkeys */}\n",
+        "{/* @chisel-passkeys */}\n<button>Passkey</button>\n{/* @end-chisel-passkeys */}\n",
     );
 
     Chisel::in($this->tempDir)->files(
@@ -99,7 +99,7 @@ it('ignores missing files when removing tagged sections from multiple targets', 
 
     file_put_contents(
         $this->tempDir.'/php/file1.php',
-        "before\n/* @2fa */\nremove me\n/* @end-2fa */\nafter\n",
+        "before\n/* @chisel-2fa */\nremove me\n/* @end-chisel-2fa */\nafter\n",
     );
 
     Chisel::in($this->tempDir)->files(
@@ -135,10 +135,26 @@ it('removes react section markers when chisel markers share a line with code', f
 
     Chisel::in($this->tempDir)
         ->file('js/file.tsx')
-        ->removeSectionMarkers('chisel-2fa-or-passkeys');
+        ->removeSectionMarkers('2fa-or-passkeys');
 
     expect(file_get_contents($this->tempDir.'/js/file.tsx'))
         ->toBe("props: Props,\n");
+});
+
+it('does not double-prefix tags that already start with chisel', function (): void {
+    mkdir($this->tempDir.'/js', 0777, true);
+
+    file_put_contents(
+        $this->tempDir.'/js/file.tsx',
+        "/* @chisel-passkeys */\n<button>Passkey</button>\n/* @end-chisel-passkeys */\n",
+    );
+
+    Chisel::in($this->tempDir)
+        ->file('js/file.tsx')
+        ->removeSectionMarkers('chisel-passkeys');
+
+    expect(file_get_contents($this->tempDir.'/js/file.tsx'))
+        ->toBe("<button>Passkey</button>\n");
 });
 
 it('removes adjacent react sections when multiple chisel blocks share a line', function (): void {
@@ -151,8 +167,8 @@ it('removes adjacent react sections when multiple chisel blocks share a line', f
 
     $chisel = Chisel::in($this->tempDir);
 
-    $chisel->file('js/file.tsx')->removeSection('chisel-2fa');
-    $chisel->file('js/file.tsx')->removeSectionMarkers('chisel-passkeys');
+    $chisel->file('js/file.tsx')->removeSection('2fa');
+    $chisel->file('js/file.tsx')->removeSectionMarkers('passkeys');
 
     expect(file_get_contents($this->tempDir.'/js/file.tsx'))
         ->toBe("props: { bar, }\n");
@@ -201,9 +217,9 @@ TSX,
     $chisel = Chisel::in($this->tempDir);
     $file = 'js/file.tsx';
 
-    $chisel->file($file)->removeSection('chisel-2fa');
-    $chisel->file($file)->removeSectionMarkers('chisel-passkeys');
-    $chisel->file($file)->removeSectionMarkers('chisel-2fa-or-passkeys');
+    $chisel->file($file)->removeSection('2fa');
+    $chisel->file($file)->removeSectionMarkers('passkeys');
+    $chisel->file($file)->removeSectionMarkers('2fa-or-passkeys');
 
     expect(file_get_contents($this->tempDir.'/'.$file))->toBe(
         "type Props = Record<string, never> & {\n    canManagePasskeys?: boolean;\n    passkeys?: Passkey[];\n};\n",
@@ -220,7 +236,7 @@ it('throws on consecutive opening markers', function (): void {
 
     Chisel::in($this->tempDir)
         ->file('js/bad.tsx')
-        ->removeSection('chisel-feat');
+        ->removeSection('feat');
 })->throws(RuntimeException::class, 'Consecutive opening markers for @chisel-feat in js/bad.tsx.');
 
 it('throws on consecutive closing markers', function (): void {
@@ -233,5 +249,5 @@ it('throws on consecutive closing markers', function (): void {
 
     Chisel::in($this->tempDir)
         ->file('js/bad.tsx')
-        ->removeSectionMarkers('chisel-feat');
+        ->removeSectionMarkers('feat');
 })->throws(RuntimeException::class, 'Consecutive closing markers for @chisel-feat in js/bad.tsx.');

@@ -57,6 +57,7 @@ class File
             return;
         }
 
+        $tag = $this->normalizeTag($tag);
         $content = $this->read($file);
         $escapedTag = preg_quote($tag, '/');
 
@@ -130,5 +131,10 @@ class File
     protected function exists(string $file): bool
     {
         return file_exists($this->directory.'/'.$file);
+    }
+
+    protected function normalizeTag(string $tag): string
+    {
+        return str_starts_with($tag, 'chisel-') ? $tag : 'chisel-'.$tag;
     }
 }
