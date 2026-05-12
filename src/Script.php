@@ -57,6 +57,14 @@ class Script
     }
 
     /**
+     * @param  callable(Question): mixed  $ask
+     */
+    public function ask(callable $ask): PendingAnswers
+    {
+        return new PendingAnswers($this->questions, $ask(...));
+    }
+
+    /**
      * @param  callable(Chisel): void|null  $then
      * @param  callable(Chisel): void|null  $else
      */

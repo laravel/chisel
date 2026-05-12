@@ -69,30 +69,42 @@ return Chisel::script(dirname(__DIR__))
     );
 ```
 
-Although the questions are defined in the `chisel.php` file, an external process such as an Artisan command is responsible for rendering them with [Laravel Prompts](https://laravel.com/docs/prompts) and passing the answers to Chisel's `run()` method. An example Artisan command might look like this:
+Although the questions are defined in the `chisel.php` file, an external process such as an Artisan command is responsible for rendering them and passing the answers to Chisel's `run()` method. An example Artisan command using [Laravel Prompts](https://laravel.com/docs/prompts) might look like this:
 
 ```php
 use Illuminate\Console\Command;
+use Laravel\Chisel\Question;
+use RuntimeException;
+
 use function Laravel\Prompts\multiselect;
 
 class InstallFeatures extends Command
 {
-    protected $signature = 'install:features';
+    protected $signature = 'install:features
+        {--answers= : JSON string of answers to skip interactive prompts}';
 
     public function handle(): void
     {
         $script = require base_path('chisel.php');
-        $question = $script->questions()[0];
 
-        $answers = [
-            $question->name => multiselect(
-                label: $question->label,
-                options: $question->options,
-                default: $question->default ?? [],
-                required: $question->required,
-                hint: $question->hint,
-            ),
-        ];
+        $providedAnswers = $this->option('answers') === null
+            ? []
+            : json_decode((string) $this->option('answers'), true, 512, JSON_THROW_ON_ERROR);
+
+        $answers = $script
+            ->ask(fn (Question $question) => match ($question->type) {
+                'multiselect' => multiselect(
+                    label: $question->label,
+                    options: $question->options,
+                    default: $question->default ?? [],
+                    required: $question->required,
+                    hint: $question->hint,
+                ),
+                default => throw new RuntimeException("Unsupported question type [{$question->type}]."),
+            })
+            ->withDefaults()
+            ->interactive($this->input->isInteractive())
+            ->withAnswers($providedAnswers);
 
         $script->run($answers);
     }
@@ -107,11 +119,22 @@ class InstallFeatures extends Command
 | `Question::multiselect(...)`               | Define a multiselect question                    |
 | `questions([...])`                         | Set the script's questions                       |
 | `questions()`                              | Retrieve the registered questions                |
+| `ask($callback)`                           | Collect answers for registered questions         |
 | `apply($callback)`                         | Register an unconditional mutation step          |
 | `selected($key, $value, then:, else:)`     | Branch on a multiselect answer                   |
 | `selectedAny($key, $values, then:, else:)` | Branch when any of the given values are selected |
 | `selectedAll($key, $values, then:, else:)` | Branch when all of the given values are selected |
 | `run($answers)`                            | Execute the registered mutations                 |
+
+## Answer Collection
+
+`ask($callback)` returns a pending answer collector.
+
+| Method                         | Purpose                                      |
+| ------------------------------ | -------------------------------------------- |
+| `interactive($interactive)`     | Configure whether missing answers are asked  |
+| `withDefaults()`               | Use question defaults when not interactive   |
+| `withAnswers($answers)`         | Merge provided answers and return all answers |
 
 ## File Mutations
 
