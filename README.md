@@ -110,6 +110,7 @@ class InstallFeatures extends Command
 | `apply($callback)`                         | Register an unconditional mutation step          |
 | `selected($key, $value, then:, else:)`     | Branch on a multiselect answer                   |
 | `selectedAny($key, $values, then:, else:)` | Branch when any of the given values are selected |
+| `selectedAll($key, $values, then:, else:)` | Branch when all of the given values are selected |
 | `run($answers)`                            | Execute the registered mutations                 |
 
 ## File Mutations

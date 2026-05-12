@@ -62,13 +62,35 @@ class Script
      */
     public function selected(string $key, string $value, ?callable $then = null, ?callable $else = null): static
     {
-        $this->mutations[] = fn (Chisel $chisel, array $answers) => $this->handleAnswer(
-            [$value],
-            $answers[$key] ?? [],
-            $then,
-            $else,
-            $chisel,
-        );
+        return $this->selectedAny($key, [$value], $then, $else);
+    }
+
+    /**
+     * @param  array<int, string>  $values
+     * @param  callable(Chisel): void|null  $then
+     * @param  callable(Chisel): void|null  $else
+     */
+    public function selectedAll(string $key, array $values, ?callable $then = null, ?callable $else = null): static
+    {
+        $this->mutations[] = function (Chisel $chisel, array $answers) use ($key, $values, $then, $else): void {
+            $selected = (array) ($answers[$key] ?? []);
+
+            foreach ($values as $value) {
+                if (in_array($value, $selected)) {
+                    continue;
+                }
+
+                if ($else !== null) {
+                    $else($chisel);
+                }
+
+                return;
+            }
+
+            if ($then !== null) {
+                $then($chisel);
+            }
+        };
 
         return $this;
     }
@@ -80,40 +102,26 @@ class Script
      */
     public function selectedAny(string $key, array $values, ?callable $then = null, ?callable $else = null): static
     {
-        $this->mutations[] = fn (Chisel $chisel, array $answers) => $this->handleAnswer(
-            $values,
-            $answers[$key] ?? [],
-            $then,
-            $else,
-            $chisel,
-        );
+        $this->mutations[] = function (Chisel $chisel, array $answers) use ($key, $values, $then, $else): void {
+            $selected = (array) ($answers[$key] ?? []);
+
+            foreach ($values as $value) {
+                if (! in_array($value, $selected)) {
+                    continue;
+                }
+
+                if ($then !== null) {
+                    $then($chisel);
+                }
+
+                return;
+            }
+
+            if ($else !== null) {
+                $else($chisel);
+            }
+        };
 
         return $this;
-    }
-
-    /**
-     * @param  array<int, string>  $values
-     * @param  callable(Chisel): void|null  $then
-     * @param  callable(Chisel): void|null  $else
-     */
-    protected function handleAnswer(array $values, mixed $selected, ?callable $then, ?callable $else, Chisel $chisel): void
-    {
-        $selected = (array) $selected;
-
-        foreach ($values as $value) {
-            if (! in_array($value, $selected)) {
-                continue;
-            }
-
-            if ($then !== null) {
-                $then($chisel);
-            }
-
-            return;
-        }
-
-        if ($else !== null) {
-            $else($chisel);
-        }
     }
 }

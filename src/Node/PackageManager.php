@@ -14,7 +14,7 @@ enum PackageManager: string
      */
     public static function nonNpmManagers(): array
     {
-        return array_values(array_filter(self::cases(), fn (self $packageManager) => $packageManager !== self::NPM));
+        return array_values(array_filter(self::cases(), fn (self $packageManager): bool => $packageManager !== self::NPM));
     }
 
     public function installCommand(): string
