@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Laravel\Chisel\Ast\Source;
 use Laravel\Chisel\Chisel;
-use Laravel\Chisel\Tools\Php\PhpFile;
 
 it('removes imports interfaces and traits from php files on destruct', function (): void {
     $path = $this->tempDir.'/User.php';
@@ -27,7 +27,7 @@ class User extends Model implements MustVerifyEmail
 PHP);
 
     $file = Chisel::in($this->tempDir)
-        ->phpFile('User.php')
+        ->php('User.php')
         ->removeImport(MustVerifyEmail::class)
         ->removeTrait('TwoFactorAuthenticatable')
         ->removeTrait('HasFactory')
@@ -45,6 +45,25 @@ PHP);
         ->not->toContain('    use HasFactory;');
 });
 
+it('removes imports from files without a namespace declaration', function (): void {
+    $path = $this->tempDir.'/file.php';
+
+    file_put_contents($path, <<<'PHP'
+<?php
+
+use Foo\Bar;
+use Baz\Qux;
+
+class X {}
+PHP);
+
+    (new Source($path))->removeImport('Bar')->save();
+
+    expect(file_get_contents($path))
+        ->not->toContain('use Foo\Bar;')
+        ->toContain('use Baz\Qux;');
+});
+
 it('can save a php file with no queued edits', function (): void {
     $path = $this->tempDir.'/SampleClass.php';
 
@@ -52,7 +71,7 @@ it('can save a php file with no queued edits', function (): void {
 
     $original = file_get_contents($path);
 
-    (new PhpFile($path))->save();
+    (new Source($path))->save();
 
     expect(file_get_contents($path))->toBe($original);
 });

@@ -1,8 +1,6 @@
 <?php
 
-namespace Laravel\Chisel;
-
-use Laravel\Chisel\Tools\File;
+namespace Laravel\Chisel\Filesystem;
 
 class PendingFiles
 {
@@ -12,7 +10,9 @@ class PendingFiles
     public function __construct(
         protected File $file,
         protected array $paths,
-    ) {}
+    ) {
+        //
+    }
 
     public function delete(): static
     {

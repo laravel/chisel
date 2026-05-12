@@ -4,7 +4,7 @@ namespace Laravel\Chisel;
 
 use Closure;
 
-final class Script
+class Script
 {
     /** @var array<int, Question> */
     private array $questions = [];
@@ -12,7 +12,10 @@ final class Script
     /** @var array<int, Closure(Chisel, array<string, mixed>): void> */
     private array $mutations = [];
 
-    public function __construct(private readonly string $directory) {}
+    public function __construct(private readonly string $directory)
+    {
+        //
+    }
 
     /**
      * @param  array<int, Question>|null  $questions
@@ -41,6 +44,9 @@ final class Script
         }
     }
 
+    /**
+     * @param  callable(Chisel, array<string, mixed>): void  $callback
+     */
     public function apply(callable $callback): static
     {
         $this->mutations[] = function (Chisel $chisel, array $answers) use ($callback): void {
@@ -50,48 +56,64 @@ final class Script
         return $this;
     }
 
+    /**
+     * @param  callable(Chisel): void|null  $then
+     * @param  callable(Chisel): void|null  $else
+     */
     public function selected(string $key, string $value, ?callable $then = null, ?callable $else = null): static
     {
-        $this->mutations[] = function (Chisel $chisel, array $answers) use ($key, $value, $then, $else): void {
-            if (in_array($value, (array) ($answers[$key] ?? []), true)) {
-                if ($then !== null) {
-                    $then($chisel);
-                }
-
-                return;
-            }
-
-            if ($else !== null) {
-                $else($chisel);
-            }
-        };
+        $this->mutations[] = fn (Chisel $chisel, array $answers) => $this->handleAnswer(
+            [$value],
+            $answers[$key] ?? [],
+            $then,
+            $else,
+            $chisel,
+        );
 
         return $this;
     }
 
     /**
      * @param  array<int, string>  $values
+     * @param  callable(Chisel): void|null  $then
+     * @param  callable(Chisel): void|null  $else
      */
     public function selectedAny(string $key, array $values, ?callable $then = null, ?callable $else = null): static
     {
-        $this->mutations[] = function (Chisel $chisel, array $answers) use ($key, $values, $then, $else): void {
-            $selected = (array) ($answers[$key] ?? []);
-
-            foreach ($values as $value) {
-                if (in_array($value, $selected, true)) {
-                    if ($then !== null) {
-                        $then($chisel);
-                    }
-
-                    return;
-                }
-            }
-
-            if ($else !== null) {
-                $else($chisel);
-            }
-        };
+        $this->mutations[] = fn (Chisel $chisel, array $answers) => $this->handleAnswer(
+            $values,
+            $answers[$key] ?? [],
+            $then,
+            $else,
+            $chisel,
+        );
 
         return $this;
+    }
+
+    /**
+     * @param  array<int, string>  $values
+     * @param  callable(Chisel): void|null  $then
+     * @param  callable(Chisel): void|null  $else
+     */
+    protected function handleAnswer(array $values, mixed $selected, ?callable $then, ?callable $else, Chisel $chisel): void
+    {
+        $selected = (array) $selected;
+
+        foreach ($values as $value) {
+            if (! in_array($value, $selected)) {
+                continue;
+            }
+
+            if ($then !== null) {
+                $then($chisel);
+            }
+
+            return;
+        }
+
+        if ($else !== null) {
+            $else($chisel);
+        }
     }
 }
