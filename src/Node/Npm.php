@@ -13,12 +13,21 @@ class Npm
         //
     }
 
-    public function run(string $script): void
+    public function install(): void
     {
         (new Factory)
             ->path($this->directory)
             ->forever()
-            ->run($this->packageManager()->runProcessCommand($script))
+            ->run($this->packageManager()->installCommand())
+            ->throw();
+    }
+
+    public function run(string $script, string ...$arguments): void
+    {
+        (new Factory)
+            ->path($this->directory)
+            ->forever()
+            ->run($this->packageManager()->runCommand($script, ...$arguments))
             ->throw();
     }
 
@@ -27,7 +36,7 @@ class Npm
         (new Factory)
             ->path($this->directory)
             ->forever()
-            ->run($this->packageManager()->removeProcessCommand(...$packages))
+            ->run($this->packageManager()->removeCommand(...$packages))
             ->throw();
     }
 

@@ -73,6 +73,7 @@ Although the questions are defined in the `chisel.php` file, an external process
 
 ```php
 use Illuminate\Console\Command;
+use Laravel\Chisel\Chisel;
 use Laravel\Chisel\Question;
 use RuntimeException;
 
@@ -107,6 +108,11 @@ class InstallFeatures extends Command
             ->withAnswers($providedAnswers);
 
         $script->run($answers);
+
+        $chisel = Chisel::in(base_path());
+
+        $chisel->npm()->install();
+        $chisel->npm()->run('build');
     }
 }
 ```
@@ -160,9 +166,11 @@ class InstallFeatures extends Command
 
 ## npm
 
-| Method                        | Purpose                                            |
-| ----------------------------- | -------------------------------------------------- |
-| `npm()->remove(...$packages)` | Remove packages using the detected package manager |
+| Method                               | Purpose                                            |
+| ------------------------------------ | -------------------------------------------------- |
+| `npm()->install()`                   | Install dependencies using the detected package manager |
+| `npm()->run($script, ...$arguments)` | Run a package manager script                       |
+| `npm()->remove(...$packages)`        | Remove packages using the detected package manager |
 
 The `npm()` method detects `npm`, `yarn`, `pnpm`, and `bun` automatically.
 

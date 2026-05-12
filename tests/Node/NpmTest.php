@@ -68,6 +68,28 @@ it('runs package manager scripts in the project directory', function (?string $l
         ->toContain('lint');
 })->with('npm-run-commands');
 
+it('runs package manager scripts with additional arguments', function (): void {
+    $log = shimBinary($this->tempDir, 'npm');
+
+    withShimmedPath($this->tempDir, fn () => Chisel::in($this->tempDir)->npm()->run('lint', '--fix'));
+
+    expect(file_get_contents($log))
+        ->toContain(realpath($this->tempDir))
+        ->toContain('run lint -- --fix');
+});
+
+it('installs dependencies with the detected package manager', function (): void {
+    file_put_contents($this->tempDir.'/pnpm-lock.yaml', '');
+
+    $log = shimBinary($this->tempDir, 'pnpm');
+
+    withShimmedPath($this->tempDir, fn () => Chisel::in($this->tempDir)->npm()->install());
+
+    expect(file_get_contents($log))
+        ->toContain(realpath($this->tempDir))
+        ->toContain('install');
+});
+
 dataset('lock-file-detection', [
     'yarn.lock' => ['yarn.lock', 'yarn'],
     'pnpm-lock.yaml' => ['pnpm-lock.yaml', 'pnpm'],

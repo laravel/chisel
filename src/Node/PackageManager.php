@@ -17,30 +17,10 @@ enum PackageManager: string
         return array_values(array_filter(self::cases(), fn (self $packageManager): bool => $packageManager !== self::NPM));
     }
 
-    public function installCommand(): string
-    {
-        return implode(' ', $this->installProcessCommand());
-    }
-
-    public function buildCommand(): string
-    {
-        return implode(' ', $this->buildProcessCommand());
-    }
-
-    public function runCommand(string $script): string
-    {
-        return implode(' ', $this->runProcessCommand($script));
-    }
-
-    public function removeCommand(string ...$packages): string
-    {
-        return implode(' ', $this->removeProcessCommand(...$packages));
-    }
-
     /**
      * @return list<string>
      */
-    public function installProcessCommand(): array
+    public function installCommand(): array
     {
         return match ($this) {
             self::NPM => ['npm', 'install'],
@@ -53,33 +33,20 @@ enum PackageManager: string
     /**
      * @return list<string>
      */
-    public function buildProcessCommand(): array
+    public function runCommand(string $script, string ...$arguments): array
     {
         return match ($this) {
-            self::NPM => ['npm', 'run', 'build'],
-            self::YARN => ['yarn', 'build'],
-            self::PNPM => ['pnpm', 'build'],
-            self::BUN => ['bun', 'run', 'build'],
+            self::NPM => ['npm', 'run', $script, ...($arguments === [] ? [] : ['--']), ...$arguments],
+            self::YARN => ['yarn', $script, ...$arguments],
+            self::PNPM => ['pnpm', $script, ...$arguments],
+            self::BUN => ['bun', 'run', $script, ...$arguments],
         };
     }
 
     /**
      * @return list<string>
      */
-    public function runProcessCommand(string $script): array
-    {
-        return match ($this) {
-            self::NPM => ['npm', 'run', $script],
-            self::YARN => ['yarn', $script],
-            self::PNPM => ['pnpm', $script],
-            self::BUN => ['bun', 'run', $script],
-        };
-    }
-
-    /**
-     * @return list<string>
-     */
-    public function removeProcessCommand(string ...$packages): array
+    public function removeCommand(string ...$packages): array
     {
         return match ($this) {
             self::NPM => ['npm', 'remove', ...$packages],
