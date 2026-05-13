@@ -67,7 +67,7 @@ return Chisel::script(dirname(__DIR__))
     );
 ```
 
-Although the questions are defined in the `chisel.php` file, an external process such as an Artisan command is responsible for rendering them and passing the answers to Chisel's `run()` method. An example Artisan command using [Laravel Prompts](https://laravel.com/docs/prompts) might look like this:
+Although the questions are defined in the `chisel.php` file, an external process such as an Artisan command is responsible for rendering them and passing the answers to Chisel's `chisel()` method. An example Artisan command using [Laravel Prompts](https://laravel.com/docs/prompts) might look like this:
 
 ```php
 use Illuminate\Console\Command;
@@ -91,7 +91,8 @@ class InstallFeatures extends Command
             : json_decode((string) $this->option('answers'), true, 512, JSON_THROW_ON_ERROR);
 
         $answers = $script
-            ->ask(fn (Question $question) => match ($question->type) {
+            ->collectAnswers()
+            ->onQuestion(fn (Question $question) => match ($question->type) {
                 'multiselect' => multiselect(
                     label: $question->label,
                     options: $question->options,
@@ -101,11 +102,10 @@ class InstallFeatures extends Command
                 ),
                 default => throw new RuntimeException("Unsupported question type [{$question->type}]."),
             })
-            ->withDefaults()
             ->interactive($this->input->isInteractive())
             ->withAnswers($providedAnswers);
 
-        $script->run($answers);
+        $script->chisel($answers);
 
         $chisel = Chisel::in(base_path());
 
@@ -123,22 +123,22 @@ class InstallFeatures extends Command
 | `Question::multiselect(...)`               | Define a multiselect question                    |
 | `questions([...])`                         | Set the script's questions                       |
 | `questions()`                              | Retrieve the registered questions                |
-| `ask($callback)`                           | Collect answers for registered questions         |
-| `apply($callback)`                         | Register an unconditional mutation step          |
-| `selected($key, $value, then:, else:)`     | Branch on a multiselect answer                   |
-| `selectedAny($key, $values, then:, else:)` | Branch when any of the given values are selected |
-| `selectedAll($key, $values, then:, else:)` | Branch when all of the given values are selected |
-| `run($answers)`                            | Execute the registered mutations                 |
+| `collectAnswers()`                         | Begin collecting answers for registered questions |
+| `apply($callback)`                         | Register an unconditional mutation step           |
+| `selected($key, $value, then:, else:)`     | Branch on a multiselect answer                    |
+| `selectedAny($key, $values, then:, else:)` | Branch when any of the given values are selected  |
+| `selectedAll($key, $values, then:, else:)` | Branch when all of the given values are selected  |
+| `chisel($answers)`                         | Execute the registered mutations                  |
 
 ## Answer Collection
 
-`ask($callback)` returns a pending answer collector.
+`collectAnswers()` returns a pending answer collector. All methods are fluent and can be called in any order. Answers are resolved when the object is used as an array or `toArray()` is called. When non-interactive, defaults are used automatically.
 
-| Method                         | Purpose                                      |
-| ------------------------------ | -------------------------------------------- |
-| `interactive($interactive)`     | Configure whether missing answers are asked  |
-| `withDefaults()`               | Use question defaults when not interactive   |
-| `withAnswers($answers)`         | Merge provided answers and return all answers |
+| Method                         | Purpose                                                    |
+| ------------------------------ | ---------------------------------------------------------- |
+| `onQuestion($callback)`        | Handle question prompts                                    |
+| `interactive($interactive)`    | Configure whether missing answers are prompted interactively |
+| `withAnswers($answers)`        | Provide pre-collected answers to skip prompting            |
 
 ## File Mutations
 
