@@ -33,11 +33,13 @@ class Script
     }
 
     /**
-     * @param  array<string, mixed>  $answers
+     * @param  array<string, mixed>|PendingAnswers  $answers
      */
-    public function run(array $answers): void
+    public function run(array|PendingAnswers $answers): void
     {
         $chisel = Chisel::in($this->directory);
+
+        $answers = $answers instanceof PendingAnswers ? $answers->toArray() : $answers;
 
         foreach ($this->mutations as $mutation) {
             $mutation($chisel, $answers);
@@ -56,12 +58,9 @@ class Script
         return $this;
     }
 
-    /**
-     * @param  callable(Question): mixed  $ask
-     */
-    public function ask(callable $ask): PendingAnswers
+    public function collectAnswers(): PendingAnswers
     {
-        return new PendingAnswers($this->questions, $ask(...));
+        return new PendingAnswers($this->questions);
     }
 
     /**

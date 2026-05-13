@@ -50,10 +50,10 @@ it('collects answers with an ask callback', function (): void {
     ]);
 
     $answers = $script
-        ->ask(fn (Question $question): array => ['2fa'])
-        ->withAnswers();
+        ->collectAnswers()
+        ->onQuestion(fn (Question $question): array => ['2fa']);
 
-    expect($answers)->toBe(['auth_features' => ['2fa']]);
+    expect($answers->toArray())->toBe(['auth_features' => ['2fa']]);
 });
 
 it('keeps provided answers when collecting answers', function (): void {
@@ -72,14 +72,15 @@ it('keeps provided answers when collecting answers', function (): void {
     ]);
 
     $answers = $script
-        ->ask(function () use (&$asked): array {
+        ->collectAnswers()
+        ->onQuestion(function () use (&$asked): array {
             $asked = true;
 
             return ['2fa'];
         })
-        ->withAnswers(['auth_features' => ['passkeys']]);
+        ->useAnswers(['auth_features' => ['passkeys']]);
 
-    expect($answers)->toBe(['auth_features' => ['passkeys']])
+    expect($answers->toArray())->toBe(['auth_features' => ['passkeys']])
         ->and($asked)->toBeFalse();
 });
 
@@ -98,12 +99,12 @@ it('uses defaults when collecting answers non-interactively', function (): void 
     ]);
 
     $answers = $script
-        ->ask(fn (): array => ['2fa'])
-        ->withDefaults()
-        ->interactive(false)
-        ->withAnswers();
+        ->collectAnswers()
+        ->onQuestion(fn (): array => ['2fa'])
+        ->useDefaults()
+        ->interactive(false);
 
-    expect($answers)->toBe(['auth_features' => ['passkeys']]);
+    expect($answers->toArray())->toBe(['auth_features' => ['passkeys']]);
 });
 
 it('throws when a required question has no answer non-interactively', function (): void {
@@ -121,9 +122,10 @@ it('throws when a required question has no answer non-interactively', function (
     ]);
 
     $script
-        ->ask(fn (): array => ['2fa'])
+        ->collectAnswers()
+        ->onQuestion(fn (): array => ['2fa'])
         ->interactive(false)
-        ->withAnswers();
+        ->toArray();
 })->throws(RuntimeException::class, 'Question [auth_features] requires an answer.');
 
 it('uses an empty array for optional unanswered questions non-interactively', function (): void {
@@ -140,11 +142,84 @@ it('uses an empty array for optional unanswered questions non-interactively', fu
     ]);
 
     $answers = $script
-        ->ask(fn (): array => ['2fa'])
-        ->interactive(false)
-        ->withAnswers();
+        ->collectAnswers()
+        ->onQuestion(fn (): array => ['2fa'])
+        ->interactive(false);
 
-    expect($answers)->toBe(['auth_features' => []]);
+    expect($answers->toArray())->toBe(['auth_features' => []]);
+});
+
+it('works as an array via ArrayAccess without calling toArray', function (): void {
+    $script = Chisel::script($this->tempDir)->questions([
+        Question::multiselect(
+            name: 'auth_features',
+            label: 'Which authentication features would you like to enable?',
+            options: [
+                'email-verification' => 'Email verification',
+                '2fa' => 'Two-factor authentication',
+                'passkeys' => 'Passkeys',
+            ],
+        ),
+    ]);
+
+    $answers = $script
+        ->collectAnswers()
+        ->onQuestion(fn (Question $question): array => ['2fa']);
+
+    expect($answers['auth_features'])->toBe(['2fa'])
+        ->and(isset($answers['auth_features']))->toBeTrue();
+});
+
+it('is iterable without calling toArray', function (): void {
+    $script = Chisel::script($this->tempDir)->questions([
+        Question::multiselect(
+            name: 'auth_features',
+            label: 'Which authentication features would you like to enable?',
+            options: [
+                'email-verification' => 'Email verification',
+                '2fa' => 'Two-factor authentication',
+                'passkeys' => 'Passkeys',
+            ],
+        ),
+    ]);
+
+    $answers = $script
+        ->collectAnswers()
+        ->onQuestion(fn (Question $question): array => ['2fa']);
+
+    $collected = [];
+    foreach ($answers as $key => $value) {
+        $collected[$key] = $value;
+    }
+
+    expect($collected)->toBe(['auth_features' => ['2fa']]);
+});
+
+it('can be passed directly to run', function (): void {
+    $ran = false;
+    $receivedAnswers = [];
+
+    $script = Chisel::script($this->tempDir)->questions([
+        Question::multiselect(
+            name: 'auth_features',
+            label: 'Which authentication features would you like to enable?',
+            options: [
+                'email-verification' => 'Email verification',
+                '2fa' => 'Two-factor authentication',
+                'passkeys' => 'Passkeys',
+            ],
+        ),
+    ])->apply(function ($chisel, $answers) use (&$ran, &$receivedAnswers): void {
+        $ran = true;
+        $receivedAnswers = $answers;
+    });
+
+    $script->run(
+        $script->collectAnswers()->onQuestion(fn (): array => ['2fa'])
+    );
+
+    expect($ran)->toBeTrue()
+        ->and($receivedAnswers)->toBe(['auth_features' => ['2fa']]);
 });
 
 it('branches on selected multiselect answers during run', function (): void {
