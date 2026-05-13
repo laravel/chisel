@@ -67,7 +67,7 @@ return Chisel::script(dirname(__DIR__))
     );
 ```
 
-Although the questions are defined in the `chisel.php` file, an external process such as an Artisan command is responsible for rendering them and passing the answers to Chisel's `run()` method. An example Artisan command using [Laravel Prompts](https://laravel.com/docs/prompts) might look like this:
+Although the questions are defined in the `chisel.php` file, an external process such as an Artisan command is responsible for rendering them and passing the answers to Chisel's `chisel()` method. An example Artisan command using [Laravel Prompts](https://laravel.com/docs/prompts) might look like this:
 
 ```php
 use Illuminate\Console\Command;
