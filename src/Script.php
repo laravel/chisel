@@ -35,7 +35,7 @@ class Script
     /**
      * @param  array<string, mixed>|PendingAnswers  $answers
      */
-    public function run(array|PendingAnswers $answers): void
+    public function chisel(array|PendingAnswers $answers): void
     {
         $chisel = Chisel::in($this->directory);
 

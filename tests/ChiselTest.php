@@ -24,14 +24,14 @@ it('registers questions separately from mutations', function (): void {
         ->and($script->questions()[0]->default)->toBe(['passkeys']);
 });
 
-it('runs unconditional mutations during run', function (): void {
+it('runs unconditional mutations', function (): void {
     $ran = false;
 
     Chisel::script($this->tempDir)
         ->apply(function () use (&$ran): void {
             $ran = true;
         })
-        ->run([]);
+        ->chisel([]);
 
     expect($ran)->toBeTrue();
 });
@@ -195,7 +195,7 @@ it('is iterable without calling toArray', function (): void {
     expect($collected)->toBe(['auth_features' => ['2fa']]);
 });
 
-it('can be passed directly to run', function (): void {
+it('can be passed directly to chisel', function (): void {
     $ran = false;
     $receivedAnswers = [];
 
@@ -214,7 +214,7 @@ it('can be passed directly to run', function (): void {
         $receivedAnswers = $answers;
     });
 
-    $script->run(
+    $script->chisel(
         $script->collectAnswers()->onQuestion(fn (): array => ['2fa'])
     );
 
@@ -222,7 +222,7 @@ it('can be passed directly to run', function (): void {
         ->and($receivedAnswers)->toBe(['auth_features' => ['2fa']]);
 });
 
-it('branches on selected multiselect answers during run', function (): void {
+it('branches on selected multiselect answers', function (): void {
     $branches = [];
 
     Chisel::script($this->tempDir)
@@ -244,12 +244,12 @@ it('branches on selected multiselect answers during run', function (): void {
         ->selected('auth_features', 'passkeys', else: function (Chisel $chisel) use (&$branches): void {
             $branches[] = $chisel::class;
         })
-        ->run(['auth_features' => ['email-verification']]);
+        ->chisel(['auth_features' => ['email-verification']]);
 
     expect($branches)->toBe([Chisel::class, Chisel::class]);
 });
 
-it('branches when any multiselect answer is selected during run', function (): void {
+it('branches when any multiselect answer is selected', function (): void {
     $branches = [];
 
     Chisel::script($this->tempDir)
@@ -271,12 +271,12 @@ it('branches when any multiselect answer is selected during run', function (): v
         ->selectedAny('auth_features', ['email-verification', '2fa'], else: function (Chisel $chisel) use (&$branches): void {
             $branches[] = $chisel::class;
         })
-        ->run(['auth_features' => ['passkeys']]);
+        ->chisel(['auth_features' => ['passkeys']]);
 
     expect($branches)->toBe([Chisel::class, Chisel::class]);
 });
 
-it('branches when all multiselect answers are selected during run', function (): void {
+it('branches when all multiselect answers are selected', function (): void {
     $branches = [];
 
     Chisel::script($this->tempDir)
@@ -298,7 +298,7 @@ it('branches when all multiselect answers are selected during run', function ():
         ->selectedAll('auth_features', ['email-verification', '2fa'], else: function (Chisel $chisel) use (&$branches): void {
             $branches[] = $chisel::class;
         })
-        ->run(['auth_features' => ['2fa', 'passkeys']]);
+        ->chisel(['auth_features' => ['2fa', 'passkeys']]);
 
     expect($branches)->toBe([Chisel::class, Chisel::class]);
 });
