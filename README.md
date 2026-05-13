@@ -17,7 +17,7 @@ composer require laravel/chisel
 
 ## Usage
 
-An example `chisel.php` script might look like this:
+An example `chisel.php` script for optional email verification might look like this:
 
 ```php
 <?php
@@ -34,8 +34,6 @@ return Chisel::script(dirname(__DIR__))
             label: 'Which authentication features would you like to enable?',
             options: [
                 'email-verification' => 'Email verification',
-                '2fa' => 'Two-factor authentication',
-                'passkeys' => 'Passkeys',
             ],
             hint: 'Use space to select, enter to confirm.',
         ),
