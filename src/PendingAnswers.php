@@ -19,8 +19,6 @@ class PendingAnswers implements ArrayAccess, IteratorAggregate
 
     protected bool $interactive = true;
 
-    protected bool $useDefaults = false;
-
     /** @var array<string, mixed> */
     protected array $providedAnswers = [];
 
@@ -42,6 +40,11 @@ class PendingAnswers implements ArrayAccess, IteratorAggregate
         return $this;
     }
 
+    /**
+     * Indicate whether the answers should be resolved
+     * interactively (prompting the user for input) or
+     * non-interactively (using default values or provided answers).
+     */
     public function interactive(bool $interactive = true): static
     {
         $this->interactive = $interactive;
@@ -49,17 +52,10 @@ class PendingAnswers implements ArrayAccess, IteratorAggregate
         return $this;
     }
 
-    public function useDefaults(bool $useDefaults = true): static
-    {
-        $this->useDefaults = $useDefaults;
-
-        return $this;
-    }
-
     /**
      * @param  array<string, mixed>  $answers
      */
-    public function useAnswers(array $answers = []): static
+    public function withAnswers(array $answers = []): static
     {
         $this->providedAnswers = $answers;
 
@@ -100,7 +96,7 @@ class PendingAnswers implements ArrayAccess, IteratorAggregate
 
     protected function defaultAnswer(Question $question): mixed
     {
-        if ($this->useDefaults && $question->default !== null) {
+        if ($question->default !== null) {
             return $question->default;
         }
 

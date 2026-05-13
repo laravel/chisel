@@ -78,13 +78,13 @@ it('keeps provided answers when collecting answers', function (): void {
 
             return ['2fa'];
         })
-        ->useAnswers(['auth_features' => ['passkeys']]);
+        ->withAnswers(['auth_features' => ['passkeys']]);
 
     expect($answers->toArray())->toBe(['auth_features' => ['passkeys']])
         ->and($asked)->toBeFalse();
 });
 
-it('uses defaults when collecting answers non-interactively', function (): void {
+it('uses defaults automatically when non-interactive', function (): void {
     $script = Chisel::script($this->tempDir)->questions([
         Question::multiselect(
             name: 'auth_features',
@@ -101,7 +101,6 @@ it('uses defaults when collecting answers non-interactively', function (): void 
     $answers = $script
         ->collectAnswers()
         ->onQuestion(fn (): array => ['2fa'])
-        ->useDefaults()
         ->interactive(false);
 
     expect($answers->toArray())->toBe(['auth_features' => ['passkeys']]);
