@@ -3,6 +3,16 @@
 use Laravel\Chisel\Chisel;
 use Laravel\Chisel\Question;
 
+it('runs commands in the project directory', function (): void {
+    $log = shimBinary($this->tempDir, 'php');
+
+    withShimmedPath($this->tempDir, fn () => Chisel::in($this->tempDir)->run(['php', 'artisan', 'about']));
+
+    expect(file_get_contents($log))
+        ->toContain(realpath($this->tempDir))
+        ->toContain('artisan about');
+});
+
 it('registers questions separately from mutations', function (): void {
     $script = Chisel::script($this->tempDir)->questions([
         Question::multiselect(

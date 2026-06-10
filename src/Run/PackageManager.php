@@ -1,6 +1,6 @@
 <?php
 
-namespace Laravel\Chisel\Node;
+namespace Laravel\Chisel\Run;
 
 enum PackageManager: string
 {
