@@ -162,7 +162,13 @@ class InstallFeatures extends Command
 | `removeTrait($trait)`         | Remove a trait usage from the class |
 | `removeInterface($interface)` | Remove an implemented interface     |
 
-## npm
+## Commands
+
+| Method           | Purpose                              |
+| ---------------- | ------------------------------------ |
+| `run($command)`  | Run a command in the project root    |
+
+### npm
 
 | Method                               | Purpose                                            |
 | ------------------------------------ | -------------------------------------------------- |
@@ -171,6 +177,12 @@ class InstallFeatures extends Command
 | `npm()->remove(...$packages)`        | Remove packages using the detected package manager |
 
 The `npm()` method detects `npm`, `yarn`, `pnpm`, and `bun` automatically.
+
+### Composer
+
+| Method                            | Purpose                  |
+| --------------------------------- | ------------------------ |
+| `composer()->remove(...$packages)` | Remove Composer packages |
 
 ## Section Markers
 
