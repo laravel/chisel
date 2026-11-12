@@ -25,7 +25,7 @@ enum PackageManager: string
         return match ($this) {
             self::NPM => ['npm', 'install'],
             self::YARN => ['yarn', 'install'],
-            self::PNPM => ['pnpm', 'install'],
+            self::PNPM => ['pnpm', 'install', '--ignore-scripts'],
             self::BUN => ['bun', 'install'],
         };
     }

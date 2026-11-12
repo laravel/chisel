@@ -19,7 +19,7 @@ dataset('package-managers', [
     ],
     'pnpm' => [
         PackageManager::PNPM,
-        ['pnpm', 'install'],
+        ['pnpm', 'install', '--ignore-scripts'],
         ['pnpm', 'lint'],
         ['pnpm', 'lint', '--fix'],
         ['pnpm', 'remove', 'vite'],
