@@ -1,6 +1,6 @@
 <?php
 
-use Laravel\Chisel\Node\PackageManager;
+use Laravel\Chisel\Run\PackageManager;
 
 dataset('package-managers', [
     'npm' => [

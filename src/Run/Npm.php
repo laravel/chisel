@@ -1,43 +1,31 @@
 <?php
 
-namespace Laravel\Chisel\Node;
+namespace Laravel\Chisel\Run;
 
-use Illuminate\Process\Factory;
+use Laravel\Chisel\Chisel;
 
 class Npm
 {
     protected ?PackageManager $packageManager = null;
 
-    public function __construct(protected string $directory)
+    public function __construct(protected Chisel $chisel)
     {
         //
     }
 
     public function install(): void
     {
-        (new Factory)
-            ->path($this->directory)
-            ->forever()
-            ->run($this->packageManager()->installCommand())
-            ->throw();
+        $this->chisel->run($this->packageManager()->installCommand());
     }
 
     public function run(string $script, string ...$arguments): void
     {
-        (new Factory)
-            ->path($this->directory)
-            ->forever()
-            ->run($this->packageManager()->runCommand($script, ...$arguments))
-            ->throw();
+        $this->chisel->run($this->packageManager()->runCommand($script, ...$arguments));
     }
 
     public function remove(string ...$packages): void
     {
-        (new Factory)
-            ->path($this->directory)
-            ->forever()
-            ->run($this->packageManager()->removeCommand(...$packages))
-            ->throw();
+        $this->chisel->run($this->packageManager()->removeCommand(...$packages));
     }
 
     public function packageManager(): PackageManager
@@ -51,7 +39,7 @@ class Npm
     {
         foreach (PackageManager::nonNpmManagers() as $packageManager) {
             foreach ($packageManager->lockFiles() as $lockFile) {
-                if (file_exists($this->directory.'/'.$lockFile)) {
+                if (file_exists($this->chisel->directory().'/'.$lockFile)) {
                     return $packageManager;
                 }
             }
@@ -62,7 +50,7 @@ class Npm
 
     protected function detectFromComposerScripts(): ?PackageManager
     {
-        $composerJson = $this->directory.'/composer.json';
+        $composerJson = $this->chisel->directory().'/composer.json';
 
         if (! file_exists($composerJson)) {
             return null;

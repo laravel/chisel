@@ -2,14 +2,18 @@
 
 namespace Laravel\Chisel;
 
+use Illuminate\Process\Factory;
 use Laravel\Chisel\Ast\Source;
 use Laravel\Chisel\Filesystem\File;
 use Laravel\Chisel\Filesystem\PendingFiles;
-use Laravel\Chisel\Node\Npm;
+use Laravel\Chisel\Run\Composer;
+use Laravel\Chisel\Run\Npm;
 
 /** @phpstan-consistent-constructor */
 class Chisel
 {
+    protected ?Composer $composer = null;
+
     protected ?Npm $npm = null;
 
     protected function __construct(protected string $directory)
@@ -37,14 +41,36 @@ class Chisel
         return $this->files($path);
     }
 
+    public function composer(): Composer
+    {
+        return $this->composer ??= new Composer($this);
+    }
+
     public function npm(): Npm
     {
-        return $this->npm ??= new Npm($this->directory);
+        return $this->npm ??= new Npm($this);
+    }
+
+    public function directory(): string
+    {
+        return $this->directory;
     }
 
     public function php(string $path): Source
     {
         return new Source($this->path($path));
+    }
+
+    /**
+     * @param  list<string>  $command
+     */
+    public function run(array $command): void
+    {
+        (new Factory)
+            ->path($this->directory)
+            ->forever()
+            ->run($command)
+            ->throw();
     }
 
     private function path(string $path): string
